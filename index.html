@@ -1189,7 +1189,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 const CONFIG = {
     provider: "gemini",
-    model: "gemini-2.5-flash",
+    model: "gemini-3.1-flash-lite-preview",
     endpoint: "https://api.openai.com/v1"
 };
 
@@ -1262,7 +1262,7 @@ function providerChanged() {
         provider === "openai" ? "block" : "none";
 
     if (provider === "gemini") {
-        $("model").value = "gemini-2.5-flash";
+      $("model").value = "gemini-3.1-flash-lite-preview";
         $("endpoint").value = "";
     } else {
         $("model").value = "gpt-4o-mini";
