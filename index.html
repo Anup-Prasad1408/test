@@ -4,1086 +4,422 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#101722">
+<meta name="theme-color" content="#f5f7f9">
 <title>Bunny AI — Intelligent Workspace</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 <style>
-:root {
-    --sidebar:#101722;
-    --sidebar2:#172230;
-    --canvas:#f5f7f9;
-    --white:#ffffff;
-    --text:#182331;
-    --muted:#84909d;
-    --border:#e9edf0;
-    --accent:#20b99a;
-    --accent-dark:#11977d;
-    --accent-soft:#e5f7f2;
-    --shadow:0 12px 40px rgba(22,40,55,.055);
-    --radius:17px;
-}
-
-* {box-sizing:border-box;margin:0;padding:0}
-
-body {
-    height:100dvh;
-    overflow:hidden;
-    font-family:'DM Sans',sans-serif;
-    background:#e8edf0;
-    color:var(--text);
-}
-
-button,input,textarea,select {font:inherit}
-button {cursor:pointer}
-button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible {
-    outline:2px solid var(--accent);
-    outline-offset:2px;
-}
-
-.app {
-    width:100%;
-    height:100dvh;
-    padding:20px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
-
-.shell {
-    width:100%;
-    max-width:1600px;
-    height:100%;
-    max-height:1000px;
-    background:var(--white);
-    border-radius:19px;
-    overflow:hidden;
-    display:flex;
-    box-shadow:0 20px 80px rgba(20,35,50,.10);
-}
-
-/* SIDEBAR */
-
-.sidebar {
-    width:265px;
-    min-width:265px;
-    background:var(--sidebar);
-    color:white;
-    display:flex;
-    flex-direction:column;
-    padding:20px 14px 15px;
-    z-index:30;
-}
-
-.brand {
-    display:flex;
-    align-items:center;
-    gap:11px;
-    padding:1px 5px 22px;
-}
-
-.brand-logo {
-    width:40px;height:40px;
-    border-radius:12px;
-    display:grid;place-items:center;
-    background:linear-gradient(145deg,#36d6b3,#139d84);
-    color:#09251e;
-    font-size:19px;
-    box-shadow:0 5px 18px #20b99a30;
-}
-
-.brand-name {
-    font:700 22px 'Space Grotesk',sans-serif;
-    letter-spacing:-.8px;
-}
-
-.brand-name span {color:#43d8b5}
-
-.brand-version {
-    font-size:9px;
-    color:#8594a5;
-    letter-spacing:1.4px;
-    margin-top:2px;
-}
-
-.collapse-btn {
-    margin-left:auto;
-    border:0;
-    background:transparent;
-    color:#8492a1;
-    font-size:15px;
-}
-
-.new-chat {
-    height:43px;
-    border:0;
-    border-radius:11px;
-    background:linear-gradient(110deg,#26c7a5,#18a88c);
-    color:#09251f;
-    font-size:12px;
-    font-weight:800;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:9px;
-    transition:.2s;
-}
-
-.new-chat:hover {filter:brightness(1.08);transform:translateY(-1px)}
-
-.section-label {
-    color:#778595;
-    font-size:9px;
-    letter-spacing:1.5px;
-    font-weight:700;
-    margin:24px 8px 9px;
-}
-
-.nav-item {
-    display:flex;
-    align-items:center;
-    gap:12px;
-    width:100%;
-    border:0;
-    border-radius:10px;
-    background:transparent;
-    color:#aeb9c7;
-    text-align:left;
-    padding:11px 12px;
-    font-size:12px;
-    margin-bottom:3px;
-    transition:.2s;
-}
-
-.nav-item i {width:17px;text-align:center;font-size:13px}
-.nav-item:hover {background:#ffffff0c;color:white}
-.nav-item.active {background:#ffffff12;color:#4edabb}
-.nav-item.active i {color:#4edabb}
-
-.history-tools {
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-}
-
-.history-tools .section-label {margin-bottom:9px}
-
-.history-tools button {
-    background:transparent;
-    border:0;
-    color:#81909e;
-    padding:5px;
-    margin-top:12px;
-}
-
-.history {
-    flex:1;
-    min-height:40px;
-    overflow-y:auto;
-}
-
-.history-group {
-    color:#6e7c8d;
-    font-size:9px;
-    letter-spacing:1px;
-    padding:12px 9px 6px;
-    font-weight:700;
-}
-
-.history-item {
-    width:100%;
-    border:0;
-    border-radius:8px;
-    background:transparent;
-    padding:10px;
-    color:#9da9b7;
-    font-size:11px;
-    text-align:left;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-}
-
-.history-item:hover,.history-item.selected {
-    background:#ffffff0c;
-    color:white;
-}
-
-.empty-history {
-    padding:12px 9px;
-    color:#687889;
-    font-size:11px;
-    line-height:1.7;
-}
-
-.premium-card {
-    margin-top:14px;
-    padding:15px 12px 12px;
-    border-radius:13px;
-    background:linear-gradient(145deg,#1e2c39,#17232f);
-    border:1px solid #ffffff12;
-    position:relative;
-    overflow:hidden;
-}
-
-.premium-card:after {
-    content:"";
-    position:absolute;
-    right:-22px;top:-35px;
-    width:100px;height:100px;
-    border:1px solid #ffffff0b;
-    border-radius:50%;
-    box-shadow:0 0 0 12px #ffffff05,0 0 0 24px #ffffff03;
-}
-
-.premium-card strong {font-size:12px;display:block}
-.premium-card p {
-    color:#9ba8b6;
-    font-size:10px;
-    line-height:1.6;
-    margin:6px 0 12px;
-}
-
-.premium-card button {
-    width:100%;
-    padding:10px;
-    border:0;
-    border-radius:9px;
-    background:#263c46;
-    color:#54dabb;
-    font-size:11px;
-    font-weight:700;
-}
-
-.profile {
-    border-top:1px solid #ffffff12;
-    margin-top:14px;
-    padding-top:14px;
-    display:flex;
-    align-items:center;
-    gap:10px;
-}
-
-.profile-avatar {
-    width:35px;height:35px;
-    border-radius:11px;
-    background:linear-gradient(145deg,#37d2ae,#168f80);
-    display:grid;place-items:center;
-    color:#09251e;
-}
-
-.profile-info {flex:1;min-width:0}
-.profile-info strong {font-size:11px;display:block}
-.profile-info small {font-size:9px;color:#8997a6}
-
-.profile button {
-    border:0;background:transparent;
-    color:#8b9aa8;padding:7px;
-}
-
-/* MAIN WORKSPACE */
-
-.main {
-    flex:1;
-    min-width:0;
-    height:100%;
-    display:flex;
-    flex-direction:column;
-    background:var(--white);
-}
-
-.topbar {
-    height:65px;
-    min-height:65px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:0 26px;
-    border-bottom:1px solid #f0f1f3;
-}
-
-.top-left,.top-right {
-    display:flex;
-    align-items:center;
-    gap:13px;
-}
-
-.mobile-menu {
-    display:none;
-    border:0;background:transparent;
-    font-size:18px;color:#253442;
-}
-
-.model-select {
-    border:0;
-    background:transparent;
-    color:#263441;
-    font:600 13px 'Space Grotesk',sans-serif;
-    outline:0;
-    max-width:190px;
-    cursor:pointer;
-}
-
-.model-indicator {
-    width:7px;height:7px;
-    border-radius:50%;
-    background:var(--accent);
-}
-
-.top-actions {display:flex;align-items:center;gap:9px}
-
-.top-btn {
-    width:34px;height:34px;
-    border:1px solid #edf0f2;
-    background:#fff;
-    border-radius:50%;
-    color:#5e6b78;
-    font-size:12px;
-    transition:.2s;
-}
-
-.top-btn:hover {background:#f2f8f6;color:var(--accent-dark)}
-
-.top-avatar {
-    width:34px;height:34px;
-    border:0;border-radius:50%;
-    background:var(--accent-soft);
-    color:var(--accent-dark);
-    font-weight:800;
-}
-
-/* CHAT WORKSPACE */
-
-.chat-area {
-    flex:1;
-    min-height:0;
-    overflow-y:auto;
-    scroll-behavior:smooth;
-    padding:25px 25px 20px;
-}
-
-.chat-content {
-    max-width:920px;
-    width:100%;
-    min-height:100%;
-    margin:auto;
-    display:flex;
-    flex-direction:column;
-}
-
-.welcome {
-    width:100%;
-    margin:auto;
-    padding:20px 0 35px;
-    text-align:center;
-}
-
-.welcome-logo {
-    width:66px;height:66px;
-    margin:0 auto 22px;
-    display:grid;place-items:center;
-    border-radius:19px;
-    background:linear-gradient(145deg,#e7faf4,#d4f3eb);
-    color:#119a7f;
-    font-size:29px;
-    box-shadow:0 7px 25px #20b99a17;
-}
-
-.eyebrow {
-    color:var(--accent-dark);
-    font-size:10px;
-    font-weight:800;
-    letter-spacing:2px;
-    margin-bottom:12px;
-}
-
-.welcome h1 {
-    font:600 clamp(26px,3vw,36px) 'Space Grotesk',sans-serif;
-    letter-spacing:-1.5px;
-    line-height:1.3;
-    color:#172532;
-}
-
-.welcome h1 span {color:#17ae90}
-
-.welcome-description {
-    color:#8b96a1;
-    font-size:12px;
-    line-height:1.8;
-    max-width:460px;
-    margin:13px auto 27px;
-}
-
-/* PROMPT */
-
-.prompt-box {
-    background:#fafbfc;
-    border:1px solid #e8ecef;
-    border-radius:16px;
-    padding:15px 15px 11px;
-    text-align:left;
-    transition:.2s;
-    box-shadow:0 3px 15px #142d3c05;
-}
-
-.prompt-box:focus-within {
-    border-color:#8adbc8;
-    box-shadow:0 0 0 3px #20b99a12;
-}
-
-#prompt {
-    width:100%;
-    min-height:57px;
-    max-height:150px;
-    resize:none;
-    background:transparent;
-    border:0;
-    outline:0;
-    color:#263442;
-    font-size:13px;
-    line-height:1.7;
-    padding:2px 1px;
-}
-
-#prompt::placeholder {color:#9aa3ac}
-
-.prompt-footer {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-top:7px;
-}
-
-.prompt-tools {display:flex;gap:9px;align-items:center}
-
-.tool-btn {
-    border:0;
-    background:transparent;
-    color:#8995a0;
-    padding:7px;
-    font-size:13px;
-    border-radius:7px;
-}
-
-.tool-btn:hover {background:#edf5f2;color:#129b80}
-
-.send-btn {
-    height:35px;width:35px;
-    border:0;
-    border-radius:10px;
-    background:var(--accent);
-    color:white;
-    font-size:14px;
-    transition:.2s;
-}
-
-.send-btn:hover {background:var(--accent-dark);transform:translateY(-1px)}
-.send-btn:disabled {opacity:.4;cursor:not-allowed}
-
-.prompt-hint {
-    color:#a0a9b1;
-    font-size:9px;
-    margin-top:9px;
-    text-align:right;
-}
-
-/* FEATURE CARDS */
-
-.feature-grid {
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:12px;
-    margin-top:19px;
-    text-align:left;
-}
-
-.feature-card {
-    border:1px solid #edf0f1;
-    background:#fff;
-    border-radius:13px;
-    padding:16px 14px 12px;
-    transition:.25s;
-    min-width:0;
-}
-
-.feature-card:hover {
-    border-color:#b7e7db;
-    transform:translateY(-3px);
-    box-shadow:var(--shadow);
-}
-
-.feature-icon {
-    width:33px;height:33px;
-    border-radius:10px;
-    background:#e9f8f3;
-    color:#159b80;
-    display:grid;place-items:center;
-    font-size:14px;
-    margin-bottom:12px;
-}
-
-.feature-card h3 {font-size:11px;margin-bottom:7px;color:#253442}
-.feature-card p {
-    color:#909aa4;
-    font-size:10px;
-    line-height:1.65;
-    min-height:47px;
-}
-
-.feature-link {
-    border:0;
-    border-top:1px solid #edf0f1;
-    padding-top:10px;
-    margin-top:10px;
-    width:100%;
-    background:transparent;
-    text-align:left;
-    color:#34424e;
-    font-size:10px;
-    font-weight:600;
-}
-
-.feature-link i {margin-left:5px;color:var(--accent-dark)}
-
-/* CHAT MESSAGES */
-
-.messages {
-    display:flex;
-    flex-direction:column;
-    gap:24px;
-    padding:15px 0 25px;
-}
-
-.message {
-    display:flex;
-    align-items:flex-start;
-    gap:11px;
-    animation:appear .2s ease;
-}
-
-@keyframes appear {
-    from {opacity:0;transform:translateY(7px)}
-    to {opacity:1;transform:translateY(0)}
-}
-
-.message.user {flex-direction:row-reverse}
-
-.message-avatar {
-    flex-shrink:0;
-    width:34px;height:34px;
-    border-radius:11px;
-    background:#e7f7f2;
-    color:#129a7e;
-    display:grid;place-items:center;
-    font-size:13px;
-}
-
-.message.user .message-avatar {
-    background:#eaf0f6;
-    color:#465d75;
-}
-
-.message-body {max-width:calc(100% - 46px);min-width:0}
-
-.message-name {
-    color:#83909b;
-    font-size:10px;
-    font-weight:700;
-    margin:3px 0 8px;
-}
-
-.message.user .message-name {text-align:right}
-
-.message-text {
-    font-size:12px;
-    line-height:1.85;
-    color:#384653;
-    overflow-wrap:anywhere;
-}
-
-.message.user .message-text {
-    padding:11px 15px;
-    background:#eaf7f3;
-    border-radius:13px 4px 13px 13px;
-    color:#24473e;
-}
-
-.message-text p {margin-bottom:9px}
-.message-text p:last-child {margin-bottom:0}
-.message-text h1,.message-text h2,.message-text h3 {
-    font-family:'Space Grotesk',sans-serif;
-    margin:14px 0 7px;
-    color:#253442;
-}
-.message-text ul,.message-text ol {padding-left:22px;margin:8px 0}
-
-.message-text pre {
-    white-space:pre;
-    overflow-x:auto;
-    padding:14px;
-    margin:12px 0;
-    border-radius:10px;
-    background:#15212c;
-    color:#d8f1e8;
-    font-size:11px;
-    line-height:1.7;
-}
-
-.message-text code {
-    font-family:Consolas,monospace;
-    background:#eef3f3;
-    color:#138a76;
-    padding:2px 4px;
-    border-radius:4px;
-}
-
-.message-text pre code {
-    background:transparent;
-    color:inherit;
-    padding:0;
-}
-
-.message-actions {
-    display:flex;gap:10px;margin-top:7px;
-}
-
-.message-actions button {
-    background:transparent;
-    border:0;
-    color:#8b969e;
-    font-size:10px;
-}
-
-.message-actions button:hover {color:#11977d}
-
-.typing {display:flex;gap:5px;padding:8px 0}
-.typing span {
-    width:6px;height:6px;
-    border-radius:50%;
-    background:#1db798;
-    animation:bounce .8s infinite alternate;
-}
-.typing span:nth-child(2) {animation-delay:.2s}
-.typing span:nth-child(3) {animation-delay:.4s}
-@keyframes bounce {to {opacity:.25;transform:translateY(-5px)}}
+:root{
+--sidebar:#101722;
+--sidebar2:#172230;
+--white:#fff;
+--text:#182331;
+--muted:#84909d;
+--border:#e9edf0;
+--accent:#20b99a;
+--accent-dark:#11977d;
+--accent-soft:#e5f7f2;
+--shadow:0 12px 40px rgba(22,40,55,.055)
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden}
+body{font-family:'DM Sans',sans-serif;background:#e8edf0;color:var(--text)}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{width:100%;height:100dvh;padding:16px;display:flex;align-items:center;justify-content:center}
+.shell{width:100%;max-width:1600px;height:100%;max-height:1000px;background:var(--white);border-radius:19px;overflow:hidden;display:flex;box-shadow:0 20px 80px rgba(20,35,50,.10)}
+
+.sidebar{
+width:265px;min-width:265px;background:var(--sidebar);color:white;
+display:flex;flex-direction:column;padding:20px 14px 15px;z-index:30;
+transition:transform .32s cubic-bezier(.2,.8,.2,1),margin-left .32s cubic-bezier(.2,.8,.2,1),opacity .2s ease
+}
+.brand{display:flex;align-items:center;gap:11px;padding:1px 5px 22px}
+.brand-logo{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(145deg,#36d6b3,#139d84);color:#09251e;font-size:19px;box-shadow:0 5px 18px #20b99a30}
+.brand-name{font:700 22px 'Space Grotesk',sans-serif;letter-spacing:-.8px}
+.brand-name span{color:#43d8b5}
+.brand-version{font-size:9px;color:#8594a5;letter-spacing:1.4px;margin-top:2px}
+
+.new-chat{height:43px;border:0;border-radius:11px;background:linear-gradient(110deg,#26c7a5,#18a88c);color:#09251f;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:9px;transition:.2s}
+.new-chat:hover{filter:brightness(1.08);transform:translateY(-1px)}
+
+.section-label{color:#778595;font-size:9px;letter-spacing:1.5px;font-weight:700;margin:24px 8px 9px}
+.nav-item{display:flex;align-items:center;gap:12px;width:100%;border:0;border-radius:10px;background:transparent;color:#aeb9c7;text-align:left;padding:11px 12px;font-size:12px;margin-bottom:3px;transition:.2s}
+.nav-item i{width:17px;text-align:center;font-size:13px}
+.nav-item:hover{background:#ffffff0c;color:white}
+.nav-item.active{background:#ffffff12;color:#4edabb}
+.nav-item.active i{color:#4edabb}
+
+.history-tools{display:flex;align-items:center;justify-content:space-between}
+.history-tools .section-label{margin-bottom:9px}
+.history-tools button{background:transparent;border:0;color:#81909e;padding:5px;margin-top:12px}
+.history{flex:1;min-height:40px;overflow-y:auto}
+.history-item{width:100%;border:0;border-radius:8px;background:transparent;padding:10px;color:#9da9b7;font-size:11px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.history-item:hover,.history-item.selected{background:#ffffff0c;color:white}
+.empty-history{padding:12px 9px;color:#687889;font-size:11px;line-height:1.7}
+
+.premium-card{margin-top:14px;padding:15px 12px 12px;border-radius:13px;background:linear-gradient(145deg,#1e2c39,#17232f);border:1px solid #ffffff12;position:relative;overflow:hidden}
+.premium-card strong{font-size:12px;display:block}
+.premium-card p{color:#9ba8b6;font-size:10px;line-height:1.6;margin:6px 0 12px}
+.premium-card button{width:100%;padding:10px;border:0;border-radius:9px;background:#263c46;color:#54dabb;font-size:11px;font-weight:700}
+
+.profile{border-top:1px solid #ffffff12;margin-top:14px;padding-top:14px;display:flex;align-items:center;gap:10px}
+.profile-avatar{width:35px;height:35px;border-radius:11px;background:linear-gradient(145deg,#37d2ae,#168f80);display:grid;place-items:center;color:#09251e}
+.profile-info{flex:1;min-width:0}
+.profile-info strong{font-size:11px;display:block}
+.profile-info small{font-size:9px;color:#8997a6}
+.profile button{border:0;background:transparent;color:#8b9aa8;padding:7px}
+
+.main{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;background:var(--white)}
+.topbar{height:65px;min-height:65px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;border-bottom:1px solid #f0f1f3}
+.top-left,.top-right{display:flex;align-items:center;gap:13px}
+
+/* SIDEBAR TOGGLE */
+.mobile-menu{
+display:grid;place-items:center;width:34px;height:34px;
+border:1px solid var(--border);border-radius:10px;
+background:var(--white);font-size:14px;color:var(--text);
+transition:background .2s,color .2s,transform .2s
+}
+.mobile-menu:hover{background:var(--accent-soft);color:var(--accent-dark)}
+.shell.sidebar-hidden .sidebar{
+margin-left:-265px;transform:translateX(-24px);
+opacity:0;pointer-events:none
+}
+.shell.sidebar-hidden .mobile-menu{color:var(--accent-dark)}
+
+.model-select{border:0;background:transparent;color:#263441;font:600 13px 'Space Grotesk',sans-serif;outline:0;max-width:230px;cursor:pointer}
+.model-indicator{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.top-actions{display:flex;align-items:center;gap:9px}
+.top-btn{width:35px;height:35px;border:1px solid #edf0f2;background:#fff;border-radius:50%;color:#5e6b78;font-size:12px;transition:.2s}
+.top-btn:hover{background:#f2f8f6;color:var(--accent-dark)}
+.top-avatar{width:35px;height:35px;border:0;border-radius:50%;background:var(--accent-soft);color:var(--accent-dark);font-weight:800}
+
+.chat-area{flex:1;min-height:0;overflow-y:auto;scroll-behavior:smooth;padding:25px 25px 20px}
+.chat-content{max-width:920px;width:100%;min-height:100%;margin:auto;display:flex;flex-direction:column}
+
+.welcome{width:100%;margin:auto;padding:20px 0 30px;text-align:center}
+.welcome-logo{width:66px;height:66px;margin:0 auto 22px;display:grid;place-items:center;border-radius:19px;background:linear-gradient(145deg,#e7faf4,#d4f3eb);color:#119a7f;font-size:29px;box-shadow:0 7px 25px #20b99a17}
+.eyebrow{color:var(--accent-dark);font-size:10px;font-weight:800;letter-spacing:2px;margin-bottom:12px}
+.welcome h1{font:600 clamp(26px,3vw,36px) 'Space Grotesk',sans-serif;letter-spacing:-1.5px;line-height:1.3;color:#172532}
+.welcome h1 span{color:#17ae90}
+.welcome-description{color:#8b96a1;font-size:12px;line-height:1.8;max-width:460px;margin:13px auto 10px}
+
+.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:25px;text-align:left}
+.feature-card{border:1px solid #edf0f1;background:#fff;border-radius:13px;padding:16px 14px 12px;transition:.25s;min-width:0}
+.feature-card:hover{border-color:#b7e7db;transform:translateY(-3px);box-shadow:var(--shadow)}
+.feature-icon{width:33px;height:33px;border-radius:10px;background:#e9f8f3;color:#159b80;display:grid;place-items:center;font-size:14px;margin-bottom:12px}
+.feature-card h3{font-size:11px;margin-bottom:7px;color:#253442}
+.feature-card p{color:#909aa4;font-size:10px;line-height:1.65;min-height:47px}
+.feature-link{border:0;border-top:1px solid #edf0f1;padding-top:10px;margin-top:10px;width:100%;background:transparent;text-align:left;color:#34424e;font-size:10px;font-weight:600}
+.feature-link i{margin-left:5px;color:var(--accent-dark)}
+
+.messages{display:flex;flex-direction:column;gap:24px;padding:15px 0 25px}
+.message{display:flex;align-items:flex-start;gap:11px;animation:appear .2s ease}
+@keyframes appear{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.message.user{flex-direction:row-reverse}
+.message-avatar{flex-shrink:0;width:34px;height:34px;border-radius:11px;background:#e7f7f2;color:#129a7e;display:grid;place-items:center;font-size:13px}
+.message.user .message-avatar{background:#eaf0f6;color:#465d75}
+.message-body{max-width:calc(100% - 46px);min-width:0}
+.message-name{color:#83909b;font-size:10px;font-weight:700;margin:3px 0 8px}
+.message.user .message-name{text-align:right}
+.message-text{font-size:12px;line-height:1.85;color:#384653;overflow-wrap:anywhere}
+.message.user .message-text{padding:11px 15px;background:#eaf7f3;border-radius:13px 4px 13px 13px;color:#24473e}
+.message-text p{margin-bottom:9px}
+.message-text p:last-child{margin-bottom:0}
+.message-text h1,.message-text h2,.message-text h3{font-family:'Space Grotesk',sans-serif;margin:14px 0 7px;color:#253442}
+.message-text ul,.message-text ol{padding-left:22px;margin:8px 0}
+.message-text pre{white-space:pre;overflow-x:auto;padding:14px;margin:12px 0;border-radius:10px;background:#15212c;color:#d8f1e8;font-size:11px;line-height:1.7}
+.message-text code{font-family:Consolas,monospace;background:#eef3f3;color:#138a76;padding:2px 4px;border-radius:4px}
+.message-text pre code{background:transparent;color:inherit;padding:0}
+.message-actions{display:flex;gap:10px;margin-top:7px}
+.message-actions button{background:transparent;border:0;color:#8b969e;font-size:10px}
+.message-actions button:hover{color:#11977d}
+
+.typing{display:flex;gap:5px;padding:8px 0}
+.typing span{width:6px;height:6px;border-radius:50%;background:#1db798;animation:bounce .8s infinite alternate}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{to{opacity:.25;transform:translateY(-5px)}}
+
+/* PERMANENT CHAT INPUT */
+.composer-wrap{width:100%;padding:12px 25px 15px;background:var(--white);border-top:1px solid var(--border);flex-shrink:0}
+.composer-inner{max-width:920px;width:100%;margin:auto}
+.prompt-box{background:#fafbfc;border:1px solid #e8ecef;border-radius:16px;padding:13px 15px 11px;text-align:left;transition:.2s;box-shadow:0 3px 15px #142d3c05}
+.prompt-box:focus-within{border-color:#8adbc8;box-shadow:0 0 0 3px #20b99a12}
+#prompt{width:100%;min-height:48px;max-height:145px;resize:none;background:transparent;border:0;outline:0;color:#263442;font-size:13px;line-height:1.7;padding:2px 1px}
+#prompt::placeholder{color:#9aa3ac}
+.prompt-footer{display:flex;justify-content:space-between;align-items:center;margin-top:5px}
+.prompt-tools{display:flex;gap:9px;align-items:center}
+.tool-btn{border:0;background:transparent;color:#8995a0;padding:7px;font-size:13px;border-radius:7px}
+.tool-btn:hover{background:#edf5f2;color:#129b80}
+.send-btn{height:35px;width:35px;border:0;border-radius:10px;background:var(--accent);color:white;font-size:14px;transition:.2s}
+.send-btn:hover{background:var(--accent-dark);transform:translateY(-1px)}
+.send-btn:disabled{opacity:.4;cursor:not-allowed}
+.composer-hint{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:9px;color:var(--muted)}
 
 /* MODALS */
+.overlay{display:none;position:fixed;inset:0;background:#10172280;backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;padding:16px}
+.overlay.show{display:flex}
+.modal{width:100%;max-width:480px;max-height:90dvh;overflow-y:auto;background:white;border-radius:19px;padding:25px;box-shadow:0 25px 90px #10203030;animation:appear .2s ease}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.modal-header h2{font:700 20px 'Space Grotesk',sans-serif;color:#1b2a36}
+.close-btn{width:32px;height:32px;border:0;border-radius:9px;background:#f1f4f5;color:#5d6973}
+.modal-desc{color:#89949d;font-size:11px;line-height:1.7;margin-bottom:19px}
+.form-group{margin-bottom:15px}
+.form-label{display:block;color:#44515d;font-size:10px;font-weight:800;letter-spacing:.5px;margin-bottom:7px}
+.form-input,.form-select{width:100%;border:1px solid #e5eaed;border-radius:10px;background:#fafbfc;color:#273542;padding:12px;font-size:11px;outline:none}
+.form-input:focus,.form-select:focus{border-color:#76d7c0}
+.input-password{display:flex;border:1px solid #e5eaed;background:#fafbfc;border-radius:10px;padding-right:9px}
+.input-password input{flex:1;min-width:0;border:0;background:transparent;outline:0;padding:12px;font-size:11px;color:#263442}
+.input-password button{border:0;background:transparent;color:#89949d;padding:5px}
+.primary-btn{width:100%;border:0;border-radius:10px;background:#1ab392;color:white;padding:13px;font-size:11px;font-weight:800;margin-top:5px}
+.primary-btn:hover{background:#11977d}
+.primary-btn:disabled{opacity:.6;cursor:wait}
+.secondary-btn{width:100%;border:1px solid #e6ebed;background:white;color:#65727d;border-radius:10px;padding:11px;font-size:11px;margin-top:9px}
+.secure-note{text-align:center;font-size:9px;color:#9ba5ad;line-height:1.7;margin-top:14px}
+.toast{position:fixed;z-index:200;bottom:25px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:#172630;color:white;padding:12px 18px;border-radius:10px;font-size:11px;transition:.25s;box-shadow:0 8px 30px #0002;max-width:90%;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.backdrop{display:none;position:fixed;inset:0;background:#0008;z-index:20}
 
-.overlay {
-    display:none;
-    position:fixed;
-    inset:0;
-    background:#10172280;
-    backdrop-filter:blur(6px);
-    z-index:100;
-    align-items:center;
-    justify-content:center;
-    padding:16px;
+/* DARK THEME */
+body[data-theme="dark"]{--white:#18232e;--text:#e7edf2;--muted:#9aa9b6;--border:#2b3945;--accent:#36cbaa;--accent-dark:#36cbaa;--accent-soft:#203d39;background:#101820}
+body[data-theme="dark"] .shell,body[data-theme="dark"] .main,body[data-theme="dark"] .chat-area,body[data-theme="dark"] .topbar,body[data-theme="dark"] .composer-wrap{background:#18232e}
+body[data-theme="dark"] .topbar,body[data-theme="dark"] .composer-wrap{border-color:#2b3945}
+body[data-theme="dark"] .welcome h1,body[data-theme="dark"] .feature-card h3,body[data-theme="dark"] .model-select,body[data-theme="dark"] .message-text,body[data-theme="dark"] .message-text h1,body[data-theme="dark"] .message-text h2,body[data-theme="dark"] .message-text h3{color:#e5edf2}
+body[data-theme="dark"] .welcome-description,body[data-theme="dark"] .feature-card p{color:#a0adb8}
+body[data-theme="dark"] .feature-card{background:#202e39;border-color:#30404c}
+body[data-theme="dark"] .feature-link{color:#dce6ec;border-color:#34434e}
+body[data-theme="dark"] .prompt-box{background:#202d38;border-color:#3a4a56}
+body[data-theme="dark"] #prompt{color:#edf4f6}
+body[data-theme="dark"] #prompt::placeholder{color:#94a2ad}
+body[data-theme="dark"] .tool-btn{color:#b0bdc6}
+body[data-theme="dark"] .top-btn,body[data-theme="dark"] .mobile-menu{background:#253440;border-color:#394955;color:#e2eaf0}
+body[data-theme="dark"] .top-avatar{background:#24473e;color:#55d9ba}
+body[data-theme="dark"] .message.user .message-text{background:#25453e;color:#e2f5ee}
+body[data-theme="dark"] .message-text code{background:#263943;color:#6ce1c4}
+body[data-theme="dark"] .message-text pre{background:#0c141d}
+body[data-theme="dark"] .welcome-logo{background:#23433d;color:#52d7b8}
+body[data-theme="dark"] .composer-hint{color:#82929f}
+body[data-theme="dark"] .modal{background:#1c2934;color:#edf3f6}
+body[data-theme="dark"] .modal-header h2,body[data-theme="dark"] .settings-row strong{color:#edf3f6}
+body[data-theme="dark"] .form-input,body[data-theme="dark"] .form-select,body[data-theme="dark"] .input-password{background:#263541;border-color:#40515e;color:#edf3f6}
+body[data-theme="dark"] .input-password input{color:#edf3f6}
+body[data-theme="dark"] .close-btn{background:#2b3a46;color:#e5edf2}
+body[data-theme="dark"] .secondary-btn{background:#263541;border-color:#40515e;color:#e1e9ef}
+body[data-theme="dark"] .history-item{color:#c3cdd5}
+body[data-theme="dark"] .nav-item.active{background:#ffffff12}
+
+@media(max-width:950px){
+.app{padding:10px}
+.sidebar{width:235px;min-width:235px}
+.chat-area{padding:20px}
+.topbar{padding:0 18px}
 }
-
-.overlay.show {display:flex}
-
-.modal {
-    width:100%;
-    max-width:480px;
-    max-height:90dvh;
-    overflow-y:auto;
-    background:white;
-    border-radius:19px;
-    padding:25px;
-    box-shadow:0 25px 90px #10203030;
-    animation:appear .2s ease;
+@media(max-width:700px){
+.app{padding:0}
+.shell{border-radius:0;max-height:none}
+.sidebar{position:fixed;left:0;top:0;bottom:0;height:100dvh;width:270px;transform:translateX(-105%);transition:transform .25s;box-shadow:10px 0 40px #0002}
+.sidebar.open{transform:translateX(0)}
+.backdrop.show{display:block}
+.mobile-menu{display:grid}
+.shell.sidebar-hidden .sidebar{margin-left:0;transform:translateX(-105%);opacity:1;pointer-events:auto}
+.topbar{height:58px;min-height:58px;padding:0 13px}
+.chat-area{padding:15px 13px}
+.welcome{padding:25px 0}
+.welcome h1{font-size:27px}
+.welcome-description{font-size:11px}
+.feature-grid{grid-template-columns:1fr;gap:9px}
+.feature-card{padding:13px}
+.feature-card p{min-height:0}
+.feature-icon{margin-bottom:8px}
+.top-actions{gap:5px}
+.top-btn{width:31px;height:31px}
+.composer-wrap{padding:10px 12px 12px}
+.composer-hint{font-size:8px}
 }
-
-.modal-header {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:10px;
-}
-
-.modal-header h2 {
-    font:700 20px 'Space Grotesk',sans-serif;
-    color:#1b2a36;
-}
-
-.close-btn {
-    width:32px;height:32px;
-    border:0;
-    border-radius:9px;
-    background:#f1f4f5;
-    color:#5d6973;
-}
-
-.modal-desc {
-    color:#89949d;
-    font-size:11px;
-    line-height:1.7;
-    margin-bottom:19px;
-}
-
-.form-group {margin-bottom:15px}
-
-.form-label {
-    display:block;
-    color:#44515d;
-    font-size:10px;
-    font-weight:800;
-    letter-spacing:.5px;
-    margin-bottom:7px;
-}
-
-.form-input,.form-select {
-    width:100%;
-    border:1px solid #e5eaed;
-    border-radius:10px;
-    background:#fafbfc;
-    color:#273542;
-    padding:12px;
-    font-size:11px;
-    outline:none;
-}
-
-.form-input:focus,.form-select:focus {border-color:#76d7c0}
-
-.input-password {
-    display:flex;
-    border:1px solid #e5eaed;
-    background:#fafbfc;
-    border-radius:10px;
-    padding-right:9px;
-}
-
-.input-password input {
-    flex:1;min-width:0;
-    border:0;background:transparent;
-    outline:0;padding:12px;
-    font-size:11px;color:#263442;
-}
-
-.input-password button {
-    border:0;background:transparent;
-    color:#89949d;padding:5px;
-}
-
-.primary-btn {
-    width:100%;
-    border:0;
-    border-radius:10px;
-    background:#1ab392;
-    color:white;
-    padding:13px;
-    font-size:11px;
-    font-weight:800;
-    margin-top:5px;
-}
-
-.primary-btn:hover {background:#11977d}
-
-.secondary-btn {
-    width:100%;
-    border:1px solid #e6ebed;
-    background:white;
-    color:#65727d;
-    border-radius:10px;
-    padding:11px;
-    font-size:11px;
-    margin-top:9px;
-}
-
-.secure-note {
-    text-align:center;
-    font-size:9px;
-    color:#9ba5ad;
-    line-height:1.7;
-    margin-top:14px;
-}
-
-.settings-row {
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:15px 0;
-    border-bottom:1px solid #edf0f1;
-    gap:12px;
-}
-
-.settings-row strong {font-size:11px;display:block;color:#263542}
-.settings-row small {font-size:9px;color:#929ca5}
-
-.settings-row button {
-    border:1px solid #e7ebed;
-    background:white;
-    border-radius:8px;
-    padding:8px 11px;
-    font-size:10px;
-    color:#4f5d67;
-}
-
-.toast {
-    position:fixed;
-    z-index:200;
-    bottom:25px;
-    left:50%;
-    transform:translate(-50%,20px);
-    opacity:0;
-    pointer-events:none;
-    background:#172630;
-    color:white;
-    padding:12px 18px;
-    border-radius:10px;
-    font-size:11px;
-    transition:.25s;
-    box-shadow:0 8px 30px #0002;
-}
-
-.toast.show {opacity:1;transform:translate(-50%,0)}
-
-.backdrop {
-    display:none;
-    position:fixed;
-    inset:0;
-    background:#0008;
-    z-index:20;
-}
-
-/* RESPONSIVE */
-
-@media(max-width:950px) {
-    .app {padding:10px}
-    .sidebar {width:235px;min-width:235px}
-    .chat-area {padding:20px}
-    .topbar {padding:0 18px}
-}
-
-@media(max-width:700px) {
-    body {background:white}
-    .app {padding:0}
-    .shell {border-radius:0;max-height:none}
-    .sidebar {
-        position:fixed;
-        left:0;top:0;bottom:0;
-        height:100dvh;
-        width:270px;
-        transform:translateX(-105%);
-        transition:transform .25s;
-        box-shadow:10px 0 40px #0002;
-    }
-    .sidebar.open {transform:translateX(0)}
-    .backdrop.show {display:block}
-    .mobile-menu {display:block}
-    .topbar {height:58px;min-height:58px;padding:0 13px}
-    .chat-area {padding:15px 13px}
-    .welcome {padding:25px 0}
-    .welcome h1 {font-size:27px}
-    .welcome-description {font-size:11px}
-    .feature-grid {grid-template-columns:1fr;gap:9px}
-    .feature-card {padding:13px}
-    .feature-card p {min-height:0}
-    .feature-icon {margin-bottom:8px}
-    .top-actions {gap:5px}
-    .top-btn {width:31px;height:31px}
-}
-
-@media(max-width:390px) {
-    .model-select {max-width:120px;font-size:11px}
-    .top-left {gap:8px}
-    .top-right {gap:4px}
-    .welcome h1 {font-size:24px}
-    .welcome-logo {width:57px;height:57px}
+@media(max-width:390px){
+.model-select{max-width:145px;font-size:10px}
+.top-left{gap:8px}
+.top-right{gap:4px}
+.welcome h1{font-size:24px}
+.welcome-logo{width:57px;height:57px}
+.composer-hint span{display:none}
 }
 </style>
 </head>
 
-<body>
+<body data-theme="light">
 
 <div class="app">
 <div class="shell">
 
-<!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
-
-    <div class="brand">
-        <div class="brand-logo"><i class="fa-solid fa-paw"></i></div>
-        <div>
-            <div class="brand-name">Bunny <span>AI</span></div>
-            <div class="brand-version">INTELLIGENT WORKSPACE</div>
-        </div>
-        <button class="collapse-btn" onclick="toggleSidebar()">
-            <i class="fa-solid fa-angles-left"></i>
-        </button>
+  <div class="brand">
+    <div class="brand-logo"><i class="fa-solid fa-paw"></i></div>
+    <div>
+      <div class="brand-name">Bunny <span>AI</span></div>
+      <div class="brand-version">INTELLIGENT WORKSPACE</div>
     </div>
+  </div>
 
-    <button class="new-chat" onclick="newChat()">
-        <i class="fa-solid fa-pen-to-square"></i>
-        New Chat
+  <button class="new-chat" onclick="newChat()">
+    <i class="fa-solid fa-pen-to-square"></i> New Chat
+  </button>
+
+  <div class="section-label">FEATURES</div>
+  <button class="nav-item active" onclick="showChat(this)">
+    <i class="fa-regular fa-comments"></i> AI Chat
+  </button>
+  <button class="nav-item" onclick="searchChats()">
+    <i class="fa-solid fa-magnifying-glass"></i> Search Chat
+  </button>
+  <button class="nav-item" onclick="openLibrary()">
+    <i class="fa-solid fa-book-open"></i> Library
+  </button>
+
+  <div class="history-tools">
+    <div class="section-label">CONVERSATIONS</div>
+    <button onclick="newChat()" title="New conversation">
+      <i class="fa-solid fa-plus"></i>
     </button>
+  </div>
 
-    <div class="section-label">FEATURES</div>
+  <div class="history" id="history"></div>
 
-    <button class="nav-item active" onclick="showChat()">
-        <i class="fa-regular fa-comments"></i> AI Chat
+  <div class="premium-card">
+    <strong><i class="fa-solid fa-sparkles"></i> Bunny Workspace</strong>
+    <p>One intelligent space for ideas, coding, learning and productivity.</p>
+    <button onclick="openSettings()">
+      <i class="fa-solid fa-sliders"></i> Configure Workspace
     </button>
+  </div>
 
-    <button class="nav-item" onclick="searchChats()">
-        <i class="fa-solid fa-magnifying-glass"></i> Search Chat
-    </button>
-
-    <button class="nav-item" onclick="openLibrary()">
-        <i class="fa-solid fa-book-open"></i> Library
-    </button>
-
-    <div class="history-tools">
-        <div class="section-label">CONVERSATIONS</div>
-        <button onclick="newChat()" title="New conversation">
-            <i class="fa-solid fa-plus"></i>
-        </button>
+  <div class="profile">
+    <div class="profile-avatar"><i class="fa-solid fa-user"></i></div>
+    <div class="profile-info">
+      <strong id="profileName">Anup Prasad</strong>
+      <small>Personal Workspace</small>
     </div>
-
-    <div class="history" id="history"></div>
-
-    <div class="premium-card">
-        <strong><i class="fa-solid fa-sparkles"></i> Bunny Workspace</strong>
-        <p>One intelligent space for ideas, coding, learning and productivity.</p>
-        <button onclick="openSettings()">
-            <i class="fa-solid fa-sliders"></i> Configure Workspace
-        </button>
-    </div>
-
-    <div class="profile">
-        <div class="profile-avatar"><i class="fa-solid fa-user"></i></div>
-        <div class="profile-info">
-            <strong id="profileName">Anup Prasad</strong>
-            <small>Personal Workspace</small>
-        </div>
-        <button onclick="openSettings()"><i class="fa-solid fa-gear"></i></button>
-    </div>
-
+    <button onclick="openSettings()"><i class="fa-solid fa-gear"></i></button>
+  </div>
 </aside>
 
-<div class="backdrop" id="backdrop" onclick="toggleSidebar()"></div>
+<div class="backdrop" id="backdrop" onclick="toggleSidebar(true)"></div>
 
-<!-- MAIN -->
 <main class="main">
 
-    <header class="topbar">
+<header class="topbar">
+  <div class="top-left">
+    <button class="mobile-menu" id="sidebarToggle" title="Hide sidebar" aria-label="Toggle sidebar" onclick="toggleSidebar()">
+      <i class="fa-solid fa-table-columns"></i>
+    </button>
 
-        <div class="top-left">
-            <button class="mobile-menu" onclick="toggleSidebar()">
-                <i class="fa-solid fa-bars"></i>
-            </button>
+    <span class="model-indicator" id="modelIndicator"></span>
 
-            <span class="model-indicator"></span>
+    <select class="model-select" id="topModel" onchange="changeModel(this.value)">
+      <option value="gemini-3.1-flash-lite-preview">Bunny AI · Gemini 3.1 Flash-Lite Preview</option>
+      <option value="custom">Custom AI Model</option>
+    </select>
+  </div>
 
-            <select class="model-select" id="topModel" onchange="changeModel(this.value)">
-                <option value="gemini-2.5-flash">Bunny AI · Gemini 2.5 Flash</option>
-                <option value="custom">Custom AI Model</option>
-            </select>
+  <div class="top-right">
+    <div class="top-actions">
+      <button class="top-btn" title="Share conversation" onclick="shareChat()">
+        <i class="fa-solid fa-arrow-up-from-bracket"></i>
+      </button>
+      <button class="top-btn" id="themeToggle" title="Switch to dark mode" onclick="toggleTheme()">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <button class="top-btn" title="API settings" onclick="openSettings()">
+        <i class="fa-solid fa-sliders"></i>
+      </button>
+      <button class="top-avatar" title="Profile">A</button>
+    </div>
+  </div>
+</header>
+
+<section class="chat-area" id="chatArea">
+  <div class="chat-content">
+
+    <div class="welcome" id="welcome">
+      <div class="welcome-logo"><i class="fa-solid fa-paw"></i></div>
+      <div class="eyebrow">YOUR INTELLIGENT AI COMPANION</div>
+
+      <h1>Welcome Back, <span>Creator.</span><br>What can we build today?</h1>
+
+      <p class="welcome-description">
+        Think smarter. Create faster. Explore new possibilities.
+        Your AI workspace is ready for your next big idea.
+      </p>
+
+      <div class="feature-grid">
+
+        <article class="feature-card">
+          <div class="feature-icon"><i class="fa-regular fa-message"></i></div>
+          <h3>Enhance Your Conversations</h3>
+          <p>Get intelligent answers, creative ideas and helpful explanations with AI.</p>
+          <button class="feature-link" onclick="suggest('What can you help me accomplish today?')">
+            Explore features <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-code"></i></div>
+          <h3>Build Something Amazing</h3>
+          <p>Write code, debug projects and turn your concepts into digital products.</p>
+          <button class="feature-link" onclick="suggest('Help me build a professional responsive website.')">
+            Start creating <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-chart-line"></i></div>
+          <h3>Think More Efficiently</h3>
+          <p>Organize your work, understand complex topics and solve problems.</p>
+          <button class="feature-link" onclick="suggest('Help me organize my goals and create an action plan.')">
+            Learn more <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </article>
+
+      </div>
+    </div>
+
+    <div class="messages" id="messages"></div>
+  </div>
+</section>
+
+<!-- PERMANENT COMPOSER -->
+<div class="composer-wrap">
+  <div class="composer-inner">
+    <div class="prompt-box">
+      <textarea id="prompt" rows="2" placeholder="Message Bunny AI..." oninput="resizePrompt(this)" onkeydown="handleEnter(event)"></textarea>
+
+      <div class="prompt-footer">
+        <div class="prompt-tools">
+          <button class="tool-btn" title="Attach text/code file" onclick="document.getElementById('fileInput').click()">
+            <i class="fa-solid fa-paperclip"></i>
+          </button>
+          <input type="file" id="fileInput" hidden accept=".txt,.md,.csv,.json,.js,.html,.css,.py">
+          <span id="fileLabel" style="font-size:9px;color:#8995a0"></span>
         </div>
 
-        <div class="top-right">
-            <div class="top-actions">
-                <button class="top-btn" title="Share" onclick="shareChat()">
-                    <i class="fa-solid fa-arrow-up-from-bracket"></i>
-                </button>
-                <button class="top-btn" title="API Settings" onclick="openSettings()">
-                    <i class="fa-solid fa-sliders"></i>
-                </button>
-                <button class="top-avatar" title="Profile" onclick="openSettings()">A</button>
-            </div>
-        </div>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+          <i class="fa-solid fa-arrow-up"></i>
+        </button>
+      </div>
+    </div>
 
-    </header>
-
-    <!-- CHAT AREA -->
-    <section class="chat-area" id="chatArea">
-
-        <div class="chat-content">
-
-            <div class="welcome" id="welcome">
-
-                <div class="welcome-logo">
-                    <i class="fa-solid fa-paw"></i>
-                </div>
-
-                <div class="eyebrow">YOUR INTELLIGENT AI COMPANION</div>
-
-                <h1>Welcome Back, <span>Creator.</span><br>
-                What can we build today?</h1>
-
-                <p class="welcome-description">
-                    Think smarter. Create faster. Explore new possibilities.
-                    Your AI workspace is ready for your next big idea.
-                </p>
-
-                <div class="prompt-box">
-
-                    <textarea id="prompt" rows="2"
-                        placeholder="Ask Bunny anything..."
-                        oninput="resizePrompt(this)"
-                        onkeydown="handleEnter(event)"></textarea>
-
-                    <div class="prompt-footer">
-
-                        <div class="prompt-tools">
-                            <button class="tool-btn" title="Attach a text file" onclick="document.getElementById('fileInput').click()">
-                                <i class="fa-solid fa-paperclip"></i>
-                            </button>
-                            <input type="file" id="fileInput" hidden accept=".txt,.md,.csv,.json,.js,.html,.css,.py">
-                            <span id="fileLabel" style="font-size:9px;color:#8995a0"></span>
-                        </div>
-
-                        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-                            <i class="fa-solid fa-arrow-up"></i>
-                        </button>
-
-                    </div>
-                </div>
-
-                <div class="prompt-hint">
-                    Press Enter to send · Shift + Enter for new line
-                </div>
-
-                <div class="feature-grid">
-
-                    <article class="feature-card">
-                        <div class="feature-icon"><i class="fa-regular fa-message"></i></div>
-                        <h3>Enhance Your Conversations</h3>
-                        <p>Get intelligent answers, creative ideas and helpful explanations with AI.</p>
-                        <button class="feature-link" onclick="suggest('What can you help me accomplish today?')">
-                            Explore features <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </article>
-
-                    <article class="feature-card">
-                        <div class="feature-icon"><i class="fa-solid fa-code"></i></div>
-                        <h3>Build Something Amazing</h3>
-                        <p>Write code, debug projects and turn your concepts into digital products.</p>
-                        <button class="feature-link" onclick="suggest('Help me build a professional responsive website.')">
-                            Start creating <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </article>
-
-                    <article class="feature-card">
-                        <div class="feature-icon"><i class="fa-solid fa-chart-line"></i></div>
-                        <h3>Think More Efficiently</h3>
-                        <p>Organize your work, understand complex topics and solve problems.</p>
-                        <button class="feature-link" onclick="suggest('Help me organize my goals and create an action plan.')">
-                            Learn more <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </article>
-
-                </div>
-
-            </div>
-
-            <div class="messages" id="messages"></div>
-
-        </div>
-    </section>
+    <div class="composer-hint">
+      <span>Bunny AI can make mistakes. Verify important information.</span>
+      <span>Enter to send · Shift + Enter for new line</span>
+    </div>
+  </div>
+</div>
 
 </main>
 </div>
@@ -1093,59 +429,50 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <div class="overlay" id="settingsModal">
 <div class="modal">
 
-    <div class="modal-header">
-        <h2><i class="fa-solid fa-sliders" style="color:#19aa8d"></i> Workspace Settings</h2>
-        <button class="close-btn" onclick="closeModal('settingsModal')">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-    </div>
-
-    <p class="modal-desc">
-        Configure your AI provider, API credentials and model.
-    </p>
-
-    <div class="form-group">
-        <label class="form-label">AI PROVIDER</label>
-        <select class="form-select" id="provider" onchange="providerChanged()">
-            <option value="gemini">Google Gemini</option>
-            <option value="openai">OpenAI / OpenAI-compatible API</option>
-        </select>
-    </div>
-
-    <div class="form-group" id="endpointGroup" style="display:none">
-        <label class="form-label">API BASE URL</label>
-        <input class="form-input" id="endpoint"
-            placeholder="https://api.openai.com/v1">
-    </div>
-
-    <div class="form-group">
-        <label class="form-label">MODEL NAME</label>
-        <input class="form-input" id="model"
-            value="gemini-2.5-flash"
-            placeholder="Enter model name">
-    </div>
-
-    <div class="form-group">
-        <label class="form-label">API KEY</label>
-        <div class="input-password">
-            <input id="apiKey" type="password" placeholder="Paste your API key">
-            <button onclick="toggleKey()"><i class="fa-regular fa-eye" id="eye"></i></button>
-        </div>
-    </div>
-
-    <button class="primary-btn" id="connectBtn" onclick="connectAPI()">
-        <i class="fa-solid fa-plug"></i> Save & Test Connection
+  <div class="modal-header">
+    <h2><i class="fa-solid fa-sliders" style="color:#19aa8d"></i> Workspace Settings</h2>
+    <button class="close-btn" onclick="closeModal('settingsModal')">
+      <i class="fa-solid fa-xmark"></i>
     </button>
+  </div>
 
-    <button class="secondary-btn" onclick="disconnectAPI()">
-        Disconnect API
-    </button>
+  <p class="modal-desc">Configure your AI provider, API credentials and model.</p>
 
-    <p class="secure-note">
-        API key is kept in temporary page memory, not saved in localStorage.
-        Browser-based API calls may expose the key. Use a secure backend proxy
-        for production deployment.
-    </p>
+  <div class="form-group">
+    <label class="form-label">AI PROVIDER</label>
+    <select class="form-select" id="provider" onchange="providerChanged()">
+      <option value="gemini">Google Gemini</option>
+      <option value="openai">OpenAI-compatible API</option>
+    </select>
+  </div>
+
+  <div class="form-group" id="endpointGroup" style="display:none">
+    <label class="form-label">API BASE URL</label>
+    <input class="form-input" id="endpoint" placeholder="https://api.openai.com/v1">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">MODEL NAME</label>
+    <input class="form-input" id="model" value="gemini-3.1-flash-lite-preview" placeholder="Enter exact model ID">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">API KEY</label>
+    <div class="input-password">
+      <input id="apiKey" type="password" placeholder="Paste your API key">
+      <button onclick="toggleKey()"><i class="fa-regular fa-eye" id="eye"></i></button>
+    </div>
+  </div>
+
+  <button class="primary-btn" id="connectBtn" onclick="connectAPI()">
+    <i class="fa-solid fa-plug"></i> Save & Test Connection
+  </button>
+
+  <button class="secondary-btn" onclick="disconnectAPI()">Disconnect API</button>
+
+  <p class="secure-note">
+    This demo keeps the key in page memory only. A browser-based API call can expose the key to visitors and browser extensions. For a public GitHub Pages site, use a secure backend proxy and never commit an API key to GitHub.
+  </p>
 
 </div>
 </div>
@@ -1153,44 +480,40 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <!-- SEARCH MODAL -->
 <div class="overlay" id="searchModal">
 <div class="modal">
-    <div class="modal-header">
-        <h2>Search Conversations</h2>
-        <button class="close-btn" onclick="closeModal('searchModal')">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-    </div>
-    <input class="form-input" id="searchInput"
-        placeholder="Search your chat history..."
-        oninput="renderSearch(this.value)">
-    <div id="searchResults" style="margin-top:14px;max-height:350px;overflow:auto"></div>
+  <div class="modal-header">
+    <h2>Search Conversations</h2>
+    <button class="close-btn" onclick="closeModal('searchModal')">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <input class="form-input" id="searchInput" placeholder="Search your chat history..." oninput="renderSearch(this.value)">
+  <div id="searchResults" style="margin-top:14px;max-height:350px;overflow:auto"></div>
 </div>
 </div>
 
 <!-- LIBRARY MODAL -->
 <div class="overlay" id="libraryModal">
 <div class="modal">
-    <div class="modal-header">
-        <h2><i class="fa-solid fa-book-open" style="color:#19aa8d"></i> Library</h2>
-        <button class="close-btn" onclick="closeModal('libraryModal')">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-    </div>
-    <p class="modal-desc">Your saved conversations and workspace resources.</p>
-    <div id="libraryContent"></div>
+  <div class="modal-header">
+    <h2><i class="fa-solid fa-book-open" style="color:#19aa8d"></i> Library</h2>
+    <button class="close-btn" onclick="closeModal('libraryModal')">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+  <p class="modal-desc">Your saved conversations and workspace resources.</p>
+  <div id="libraryContent"></div>
 </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-/* ========================================
-   BUNNY AI CONFIGURATION
-======================================== */
-
+/* BUNNY AI CONFIGURATION */
 const CONFIG = {
-    provider: "gemini",
-    model: "gemini-3.1-flash-lite-preview",
-    endpoint: "https://api.openai.com/v1"
+  provider: "gemini",
+  model: "gemini-3.1-flash-lite-preview",
+  endpoint: "https://api.openai.com/v1"
 };
 
 let apiKey = "";
@@ -1203,689 +526,761 @@ let attachedText = "";
 
 const $ = id => document.getElementById(id);
 
-/* ========================================
-   UTILITIES
-======================================== */
-
+/* UTILITIES */
 function toast(message) {
-    const el = $("toast");
-    el.textContent = message;
-    el.classList.add("show");
-    clearTimeout(toast.timer);
-    toast.timer = setTimeout(() => el.classList.remove("show"), 2600);
+  const el = $("toast");
+  el.textContent = message;
+  el.classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => el.classList.remove("show"), 3000);
 }
 
 function escapeHTML(text) {
-    return String(text).replace(/[&<>"']/g, c => ({
-        "&":"&amp;", "<":"&lt;", ">":"&gt;",
-        '"':"&quot;", "'":"&#39;"
-    })[c]);
+  return String(text).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
 }
 
 function closeModal(id) {
-    $(id).classList.remove("show");
+  $(id).classList.remove("show");
 }
 
+/* SETTINGS */
 function openSettings() {
-    $("provider").value = CONFIG.provider;
-    $("model").value = CONFIG.model;
-    $("endpoint").value = CONFIG.endpoint;
-    $("apiKey").value = apiKey;
-    providerChanged();
-    $("settingsModal").classList.add("show");
+  $("provider").value = CONFIG.provider;
+  $("model").value = CONFIG.model;
+  $("endpoint").value = CONFIG.endpoint;
+  $("apiKey").value = apiKey;
+  providerChanged(false);
+  $("settingsModal").classList.add("show");
 }
 
 function toggleKey() {
-    const field = $("apiKey");
-    field.type = field.type === "password" ? "text" : "password";
-    $("eye").classList.toggle("fa-eye");
-    $("eye").classList.toggle("fa-eye-slash");
+  const field = $("apiKey");
+  field.type = field.type === "password" ? "text" : "password";
+  $("eye").classList.toggle("fa-eye");
+  $("eye").classList.toggle("fa-eye-slash");
 }
 
 function changeModel(value) {
-    if (value === "custom") {
-        openSettings();
-        return;
-    }
-    CONFIG.model = value;
-    $("model").value = value;
+  if(value === "custom") {
+    openSettings();
+    return;
+  }
+  CONFIG.model = value;
+  $("model").value = value;
 }
 
-/* ========================================
-   PROVIDER SETTINGS
-======================================== */
+function providerChanged(reset = true) {
+  const p = $("provider").value;
+  $("endpointGroup").style.display = p === "openai" ? "block" : "none";
 
-function providerChanged() {
-    const provider = $("provider").value;
-
-    $("endpointGroup").style.display =
-        provider === "openai" ? "block" : "none";
-
-    if (provider === "gemini") {
+  if(reset) {
+    if(p === "gemini") {
       $("model").value = "gemini-3.1-flash-lite-preview";
-        $("endpoint").value = "";
+      $("endpoint").value = "";
     } else {
-        $("model").value = "gpt-4o-mini";
-        $("endpoint").value = "https://api.openai.com/v1";
+      $("model").value = "gpt-4o-mini";
+      $("endpoint").value = "https://api.openai.com/v1";
     }
+  }
 }
 
 function updateConnection() {
-    const indicator = document.querySelector(".model-indicator");
-    indicator.style.background = connected ? "#20b99a" : "#e7a74a";
+  $("modelIndicator").style.background = connected ? "#20b99a" : "#e7a74a";
 }
 
+/* CONNECT API */
 async function connectAPI() {
-    const provider = $("provider").value;
-    const key = $("apiKey").value.trim();
-    const model = $("model").value.trim();
-    const endpoint = $("endpoint").value.trim();
+  const provider = $("provider").value;
+  const key = $("apiKey").value.trim();
+  const model = $("model").value.trim();
+  const endpoint = $("endpoint").value.trim();
 
-    if (!key || !model) {
-        toast("Please enter your API key and model.");
-        return;
-    }
+  if(!key || !model) {
+    toast("Enter your API key and exact model ID.");
+    return;
+  }
 
-    if (provider === "openai" && !endpoint) {
-        toast("Please enter the API base URL.");
-        return;
-    }
+  if(provider === "openai" && !endpoint) {
+    toast("Enter the API base URL.");
+    return;
+  }
 
-    CONFIG.provider = provider;
-    CONFIG.model = model;
-    CONFIG.endpoint = endpoint;
-    apiKey = key;
+  if(provider === "openai" && !/^https:\/\//i.test(endpoint)) {
+    toast("Use an HTTPS API endpoint.");
+    return;
+  }
 
-    const btn = $("connectBtn");
-    btn.disabled = true;
-    btn.textContent = "Testing connection...";
+  const old = {...CONFIG};
+  const oldKey = apiKey;
 
-    try {
-        const answer = await requestAI([
-            { role: provider === "gemini" ? "user" : "user",
-              text: "Reply with exactly: Connection successful." }
-        ], true);
+  CONFIG.provider = provider;
+  CONFIG.model = model;
+  CONFIG.endpoint = endpoint;
+  apiKey = key;
 
-        connected = true;
-        updateConnection();
-        closeModal("settingsModal");
-        $("topModel").innerHTML =
-            `<option value="${escapeHTML(model)}">${escapeHTML(model)}</option><option value="custom">Custom AI Model</option>`;
+  const btn = $("connectBtn");
+  btn.disabled = true;
+  btn.textContent = "Testing connection...";
 
-        toast("AI provider connected successfully!");
+  try {
+    await requestAI([{role:"user",text:"Reply with exactly: Connection successful."}]);
 
-    } catch (error) {
-        connected = false;
-        updateConnection();
-        apiKey = "";
-        toast("Connection failed: " + error.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-plug"></i> Save & Test Connection';
-    }
+    connected = true;
+    updateConnection();
+    closeModal("settingsModal");
+
+    $("topModel").innerHTML = "";
+
+    const option = document.createElement("option");
+    option.value = model;
+    option.textContent = "Bunny AI · " + model;
+    $("topModel").appendChild(option);
+
+    const custom = document.createElement("option");
+    custom.value = "custom";
+    custom.textContent = "Custom AI Model";
+    $("topModel").appendChild(custom);
+
+    toast("AI provider connected successfully.");
+
+  } catch(error) {
+    Object.assign(CONFIG, old);
+    apiKey = oldKey;
+    connected = !!oldKey;
+    updateConnection();
+    toast("Connection failed: " + error.message);
+
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-plug"></i> Save & Test Connection';
+  }
 }
 
 function disconnectAPI() {
-    apiKey = "";
-    connected = false;
-    updateConnection();
-    closeModal("settingsModal");
-    toast("API disconnected.");
+  apiKey = "";
+  connected = false;
+  updateConnection();
+  closeModal("settingsModal");
+  toast("API disconnected.");
 }
 
-/* ========================================
-   UNIVERSAL API REQUEST
-======================================== */
+/* AI REQUEST ENGINE */
+async function requestAI(messages) {
+  if(!apiKey) throw new Error("API key is missing.");
 
-async function requestAI(messages, test = false) {
-    if (!apiKey) throw new Error("API key is missing.");
+  let url, body;
+  let headers = {"Content-Type":"application/json"};
 
-    let url, body, headers = {
-        "Content-Type": "application/json"
+  if(CONFIG.provider === "gemini") {
+
+    url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(CONFIG.model)}:generateContent`;
+
+    headers["x-goog-api-key"] = apiKey;
+
+    body = {
+      system_instruction: {
+        parts: [{
+          text: "You are Bunny AI, an intelligent and helpful AI assistant created by Anup Prasad. Be friendly, accurate and professional. Understand English, Hindi and Hinglish. Use headings, examples and properly formatted code when useful. Give clear, useful answers."
+        }]
+      },
+
+      contents: messages.map(m => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{text:m.text}]
+      })),
+
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 4096
+      }
     };
 
-    if (CONFIG.provider === "gemini") {
+  } else {
 
-        url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(CONFIG.model)}:generateContent`;
+    const base = CONFIG.endpoint.replace(/\/+$/,"");
 
-        headers["x-goog-api-key"] = apiKey;
+    url = base.endsWith("/chat/completions")
+      ? base
+      : base + "/chat/completions";
 
-        body = {
-            system_instruction: {
-                parts: [{
-                    text: `You are Bunny AI, an intelligent and helpful AI assistant created by Anup Prasad.
-Be friendly, accurate and professional.
-Understand English, Hindi and Hinglish.
-Use headings, examples and properly formatted code when useful.
-Give clear and helpful answers.`
-                }]
-            },
-            contents: messages.map(m => ({
-                role: m.role === "assistant" ? "model" : "user",
-                parts: [{ text: m.text }]
-            })),
-            generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 4096
-            }
-        };
+    headers.Authorization = "Bearer " + apiKey;
 
-    } else {
+    body = {
+      model: CONFIG.model,
+      messages: [
+        {
+          role:"system",
+          content:"You are Bunny AI, an intelligent and helpful assistant created by Anup Prasad. Be professional and understand English, Hindi and Hinglish."
+        },
+        ...messages.map(m => ({
+          role:m.role === "assistant" ? "assistant" : "user",
+          content:m.text
+        }))
+      ],
+      temperature:0.7,
+      max_tokens:4096
+    };
+  }
 
-        const base = CONFIG.endpoint.replace(/\/+$/, "");
+  const response = await fetch(url,{
+    method:"POST",
+    headers,
+    body:JSON.stringify(body)
+  });
 
-        url = base.endsWith("/chat/completions")
-            ? base
-            : base + "/chat/completions";
+  const data = await response.json().catch(() => ({}));
 
-        headers["Authorization"] = "Bearer " + apiKey;
+  if(!response.ok) {
+    throw new Error(
+      data.error?.message ||
+      data.message ||
+      `API returned HTTP ${response.status}`
+    );
+  }
 
-        body = {
-            model: CONFIG.model,
-            messages: [
-                {
-                    role: "system",
-                    content: `You are Bunny AI, a friendly, intelligent AI assistant created by Anup Prasad. Be helpful, accurate and professional. Understand Hindi, Hinglish and English.`
-                },
-                ...messages.map(m => ({
-                    role: m.role === "assistant" ? "assistant" : "user",
-                    content: m.text
-                }))
-            ],
-            temperature: 0.7,
-            max_tokens: 4096
-        };
+  let answer = "";
+
+  if(CONFIG.provider === "gemini") {
+    answer = data.candidates?.[0]?.content?.parts
+      ?.filter(p => p.text)
+      .map(p => p.text)
+      .join("");
+  } else {
+    answer = data.choices?.[0]?.message?.content;
+    if(Array.isArray(answer)) {
+      answer = answer.map(x => x.text || "").join("");
     }
+  }
 
-    const response = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body)
-    });
+  if(!answer || !answer.trim()) {
+    throw new Error("The API returned an empty response.");
+  }
 
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-        throw new Error(
-            data.error?.message ||
-            data.message ||
-            `API returned HTTP ${response.status}`
-        );
-    }
-
-    let answer = "";
-
-    if (CONFIG.provider === "gemini") {
-        answer = data.candidates?.[0]?.content?.parts
-            ?.filter(p => p.text)
-            .map(p => p.text).join("");
-    } else {
-        answer = data.choices?.[0]?.message?.content;
-
-        if (Array.isArray(answer)) {
-            answer = answer.map(x => x.text || "").join("");
-        }
-    }
-
-    if (!answer || !answer.trim()) {
-        throw new Error("The API returned an empty response.");
-    }
-
-    return answer;
+  return answer;
 }
 
-/* ========================================
-   CHAT MANAGEMENT
-======================================== */
-
+/* CHAT STORAGE */
 function saveChats() {
-    try {
-        localStorage.setItem("bunny_ai_chats", JSON.stringify(chats));
-    } catch {
-        toast("Unable to save chat history in this browser.");
-    }
+  try {
+    localStorage.setItem("bunny_ai_chats",JSON.stringify(chats));
+  } catch {
+    toast("Chat history could not be saved. Browser storage may be full.");
+  }
 }
 
 function loadChats() {
-    try {
-        chats = JSON.parse(localStorage.getItem("bunny_ai_chats") || "[]");
-    } catch {
-        chats = [];
-    }
-    renderHistory();
+  try {
+    const saved = JSON.parse(localStorage.getItem("bunny_ai_chats") || "[]");
+    chats = Array.isArray(saved) ? saved : [];
+  } catch {
+    chats = [];
+  }
+  renderHistory();
 }
 
 function newChat() {
-    currentChat = null;
-    history = [];
-    attachedText = "";
+  currentChat = null;
+  history = [];
+  attachedText = "";
 
-    $("messages").innerHTML = "";
-    $("welcome").style.display = "block";
-    $("prompt").value = "";
-    $("fileLabel").textContent = "";
+  $("messages").innerHTML = "";
+  $("welcome").style.display = "block";
+  $("prompt").value = "";
+  $("fileLabel").textContent = "";
 
-    renderHistory();
-    toggleSidebar(true);
-    $("prompt").focus();
+  resizePrompt($("prompt"));
+  renderHistory();
+  toggleSidebar(true);
+  $("prompt").focus();
 }
 
 function createChat() {
-    currentChat = {
-        id: Date.now(),
-        title: "New Conversation",
-        messages: []
-    };
+  currentChat = {
+    id:Date.now(),
+    title:"New Conversation",
+    messages:[]
+  };
 
-    chats.unshift(currentChat);
-    saveChats();
+  chats.unshift(currentChat);
+  saveChats();
 }
 
-function saveMessage(role, text) {
-    if (!currentChat) createChat();
+function saveMessage(role,text) {
+  if(!currentChat) createChat();
 
-    currentChat.messages.push({role, text});
+  currentChat.messages.push({role,text});
 
-    if (role === "user" && currentChat.messages.length === 1) {
-        currentChat.title = text.slice(0, 38) +
-            (text.length > 38 ? "..." : "");
-    }
+  if(role === "user" && currentChat.messages.filter(m => m.role === "user").length === 1) {
+    currentChat.title = text.slice(0,38) + (text.length > 38 ? "..." : "");
+  }
 
-    saveChats();
-    renderHistory();
+  saveChats();
+  renderHistory();
 }
 
 function renderHistory() {
-    const box = $("history");
-    box.innerHTML = "";
+  const box = $("history");
+  box.innerHTML = "";
 
-    if (!chats.length) {
-        box.innerHTML = '<div class="empty-history">Your conversations will appear here.</div>';
-        return;
-    }
+  if(!chats.length) {
+    box.innerHTML = '<div class="empty-history">Your conversations will appear here.</div>';
+    return;
+  }
 
-    chats.forEach(chat => {
-        const button = document.createElement("button");
-        button.className = "history-item" +
-            (chat.id === currentChat?.id ? " selected" : "");
-        button.textContent = chat.title;
-        button.onclick = () => loadChat(chat.id);
-        box.appendChild(button);
-    });
+  chats.forEach(chat => {
+    const b = document.createElement("button");
+    b.className = "history-item" + (chat.id === currentChat?.id ? " selected" : "");
+    b.textContent = chat.title;
+    b.onclick = () => loadChat(chat.id);
+    box.appendChild(b);
+  });
 }
 
 function loadChat(id) {
-    const chat = chats.find(c => c.id === id);
-    if (!chat) return;
+  const chat = chats.find(c => c.id === id);
+  if(!chat) return;
 
-    currentChat = chat;
-    history = chat.messages.map(m => ({
-        role: m.role,
-        text: m.text
-    }));
+  currentChat = chat;
+  history = chat.messages.map(m => ({role:m.role,text:m.text}));
 
-    $("welcome").style.display = "none";
-    $("messages").innerHTML = "";
+  $("welcome").style.display = "none";
+  $("messages").innerHTML = "";
 
-    chat.messages.forEach(m => addMessage(m.text, m.role));
+  chat.messages.forEach(m => addMessage(m.text,m.role));
 
-    renderHistory();
-    toggleSidebar(true);
+  renderHistory();
+  toggleSidebar(true);
+  $("chatArea").scrollTop = $("chatArea").scrollHeight;
 }
 
-function clearChat() {
-    if (!currentChat) {
-        newChat();
-        return;
-    }
-
-    chats = chats.filter(c => c.id !== currentChat.id);
-    saveChats();
-    newChat();
-    toast("Conversation cleared.");
-}
-
-/* ========================================
-   MESSAGE FORMATTING
-======================================== */
-
+/* MESSAGE FORMATTING */
 function formatText(text) {
-    let safe = escapeHTML(text);
-    const codeBlocks = [];
+  let safe = escapeHTML(text);
+  let blocks = [];
 
-    safe = safe.replace(/```([\w-]*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-        const i = codeBlocks.length;
-        codeBlocks.push(code);
-        return `%%CODE${i}%%`;
-    });
+  safe = safe.replace(/```([\w-]*)\n?([\s\S]*?)```/g,(_,lang,code) => {
+    const i = blocks.length;
+    blocks.push(code);
+    return `%%CODE${i}%%`;
+  });
 
-    safe = safe.replace(/^### (.*)$/gm, "<h3>$1</h3>");
-    safe = safe.replace(/^## (.*)$/gm, "<h2>$1</h2>");
-    safe = safe.replace(/^# (.*)$/gm, "<h1>$1</h1>");
-    safe = safe.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-    safe = safe.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
-    safe = safe.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+  safe = safe
+    .replace(/^### (.*)$/gm,"<h3>$1</h3>")
+    .replace(/^## (.*)$/gm,"<h2>$1</h2>")
+    .replace(/^# (.*)$/gm,"<h1>$1</h1>");
 
-    safe = safe.replace(/^\s*[-*] (.*)$/gm, "<li>$1</li>");
-    safe = safe.replace(/(?:<li>.*?<\/li>\n?)+/gs, m => `<ul>${m}</ul>`);
+  safe = safe
+    .replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>")
+    .replace(/\*([^*\n]+)\*/g,"<em>$1</em>")
+    .replace(/`([^`\n]+)`/g,"<code>$1</code>");
 
-    safe = safe.split(/\n{2,}/).map(part => {
-        part = part.trim();
-        if (!part) return "";
-        if (/^<(h[1-3]|ul|ol|pre)/.test(part)) return part;
-        return `<p>${part.replace(/\n/g, "<br>")}</p>`;
-    }).join("");
+  safe = safe
+    .replace(/^\s*[-*] (.*)$/gm,"<li>$1</li>")
+    .replace(/(?:<li>.*?<\/li>\n?)+/gs,m => `<ul>${m}</ul>`);
 
-    safe = safe.replace(/%%CODE(\d+)%%/g, (_, i) =>
-        `<pre><code>${codeBlocks[Number(i)]}</code></pre>`
-    );
+  safe = safe.split(/\n{2,}/).map(part => {
+    part = part.trim();
+    if(!part) return "";
+    if(/^<(h[1-3]|ul|ol|pre)/.test(part)) return part;
+    return `<p>${part.replace(/\n/g,"<br>")}</p>`;
+  }).join("");
 
-    return safe;
+  return safe.replace(/%%CODE(\d+)%%/g,(_,i) =>
+    `<pre><code>${blocks[Number(i)]}</code></pre>`
+  );
 }
 
-function addMessage(text, role) {
-    const box = $("messages");
-    const message = document.createElement("div");
+function addMessage(text,role) {
+  const box = $("messages");
+  const message = document.createElement("div");
+  message.className = "message " + role;
 
-    message.className = "message " + role;
+  const avatar = document.createElement("div");
+  avatar.className = "message-avatar";
+  avatar.innerHTML = role === "user"
+    ? '<i class="fa-solid fa-user"></i>'
+    : '<i class="fa-solid fa-paw"></i>';
 
-    const avatar = document.createElement("div");
-    avatar.className = "message-avatar";
-    avatar.innerHTML = role === "user"
-        ? '<i class="fa-solid fa-user"></i>'
-        : '<i class="fa-solid fa-paw"></i>';
+  const body = document.createElement("div");
+  body.className = "message-body";
 
-    const body = document.createElement("div");
-    body.className = "message-body";
+  const name = document.createElement("div");
+  name.className = "message-name";
+  name.textContent = role === "user" ? "You" : "Bunny AI";
 
-    const name = document.createElement("div");
-    name.className = "message-name";
-    name.textContent = role === "user" ? "You" : "Bunny AI";
+  const content = document.createElement("div");
+  content.className = "message-text";
 
-    const content = document.createElement("div");
-    content.className = "message-text";
-    content.innerHTML = role === "user"
-        ? escapeHTML(text).replace(/\n/g, "<br>")
-        : formatText(text);
+  content.innerHTML = role === "user"
+    ? escapeHTML(text).replace(/\n/g,"<br>")
+    : formatText(text);
 
-    body.append(name, content);
+  body.append(name,content);
 
-    if (role === "assistant") {
-        const actions = document.createElement("div");
-        actions.className = "message-actions";
+  if(role === "assistant") {
+    const actions = document.createElement("div");
+    actions.className = "message-actions";
 
-        const copy = document.createElement("button");
-        copy.innerHTML = '<i class="fa-regular fa-copy"></i> Copy response';
+    const copy = document.createElement("button");
+    copy.innerHTML = '<i class="fa-regular fa-copy"></i> Copy response';
 
-        copy.onclick = async () => {
-            try {
-                await navigator.clipboard.writeText(text);
-                toast("Copied successfully.");
-            } catch {
-                toast("Copy is unavailable.");
-            }
-        };
+    copy.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(text);
+        toast("Copied successfully.");
+      } catch {
+        toast("Clipboard access unavailable.");
+      }
+    };
 
-        actions.appendChild(copy);
-        body.appendChild(actions);
-    }
+    actions.appendChild(copy);
+    body.appendChild(actions);
+  }
 
-    message.append(avatar, body);
-    box.appendChild(message);
-
-    $("chatArea").scrollTop = $("chatArea").scrollHeight;
+  message.append(avatar,body);
+  box.appendChild(message);
+  $("chatArea").scrollTop = $("chatArea").scrollHeight;
 }
 
 function showTyping() {
-    const element = document.createElement("div");
-    element.className = "message";
-    element.id = "typing";
+  const el = document.createElement("div");
+  el.className = "message";
+  el.id = "typing";
 
-    element.innerHTML = `
-        <div class="message-avatar"><i class="fa-solid fa-paw"></i></div>
-        <div class="message-body">
-            <div class="message-name">Bunny AI</div>
-            <div class="typing"><span></span><span></span><span></span></div>
-        </div>`;
+  el.innerHTML = `
+    <div class="message-avatar"><i class="fa-solid fa-paw"></i></div>
+    <div class="message-body">
+      <div class="message-name">Bunny AI</div>
+      <div class="typing"><span></span><span></span><span></span></div>
+    </div>`;
 
-    $("messages").appendChild(element);
+  $("messages").appendChild(el);
+  $("chatArea").scrollTop = $("chatArea").scrollHeight;
 }
 
-/* ========================================
-   SEND MESSAGE
-======================================== */
-
+/* SEND MESSAGE */
 async function sendMessage() {
-    if (loading) return;
+  if(loading) return;
 
-    const input = $("prompt");
-    let text = input.value.trim();
+  const input = $("prompt");
+  let text = input.value.trim();
 
-    if (attachedText) {
-        text += "\n\nAttached file content:\n" + attachedText;
-    }
+  if(attachedText) {
+    text += (text ? "\n\n" : "") + "Attached file content:\n" + attachedText;
+  }
 
-    if (!text) return;
+  if(!text) return;
 
-    if (!connected || !apiKey) {
-        openSettings();
-        toast("Connect your AI provider first.");
-        return;
-    }
+  if(!connected || !apiKey) {
+    openSettings();
+    toast("Connect your AI provider first.");
+    return;
+  }
 
-    loading = true;
-    $("sendBtn").disabled = true;
+  loading = true;
+  $("sendBtn").disabled = true;
 
-    $("welcome").style.display = "none";
-    input.value = "";
-    resizePrompt(input);
+  $("welcome").style.display = "none";
 
-    $("fileLabel").textContent = "";
-    attachedText = "";
+  input.value = "";
+  resizePrompt(input);
 
-    addMessage(text, "user");
-    history.push({role:"user",text});
-    saveMessage("user", text);
+  $("fileLabel").textContent = "";
+  attachedText = "";
 
-    showTyping();
+  addMessage(text,"user");
+  history.push({role:"user",text});
+  saveMessage("user",text);
+  showTyping();
 
-    try {
-        const answer = await requestAI(history);
+  try {
+    const answer = await requestAI(history);
 
-        $("typing")?.remove();
+    $("typing")?.remove();
 
-        history.push({role:"assistant",text:answer});
-        addMessage(answer, "assistant");
-        saveMessage("assistant", answer);
+    history.push({role:"assistant",text:answer});
+    addMessage(answer,"assistant");
+    saveMessage("assistant",answer);
 
-    } catch (error) {
-        $("typing")?.remove();
+  } catch(error) {
+    $("typing")?.remove();
+    history.pop();
 
-        history.pop();
+    addMessage(
+      "Something went wrong.\n\n" +
+      error.message +
+      "\n\nPlease check your API settings and try again.",
+      "assistant"
+    );
 
-        addMessage(
-            "Something went wrong.\n\n" + error.message +
-            "\n\nPlease check your provider settings and try again.",
-            "assistant"
-        );
-    } finally {
-        loading = false;
-        $("sendBtn").disabled = false;
-        input.focus();
-    }
+  } finally {
+    loading = false;
+    $("sendBtn").disabled = false;
+    input.focus();
+  }
 }
-
-/* ========================================
-   INPUT AND FILES
-======================================== */
 
 function resizePrompt(el) {
-    el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight, 150) + "px";
+  el.style.height = "auto";
+  el.style.height = Math.min(el.scrollHeight,145) + "px";
 }
 
 function handleEnter(event) {
-    if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        sendMessage();
-    }
+  if(event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
+  }
 }
 
 function suggest(text) {
-    $("prompt").value = text;
-    sendMessage();
+  $("prompt").value = text;
+  sendMessage();
 }
 
-$("fileInput").addEventListener("change", async event => {
-    const file = event.target.files[0];
-    if (!file) return;
+/* FILE ATTACHMENT */
+$("fileInput").addEventListener("change",async event => {
+  const file = event.target.files[0];
+  if(!file) return;
 
-    if (file.size > 500000) {
-        toast("Please choose a file smaller than 500 KB.");
-        event.target.value = "";
-        return;
-    }
+  if(file.size > 500000) {
+    toast("Choose a file smaller than 500 KB.");
+    event.target.value = "";
+    return;
+  }
 
-    try {
-        attachedText = await file.text();
-        $("fileLabel").textContent = file.name;
-        toast("File attached.");
-    } catch {
-        toast("Could not read this file.");
-    }
+  try {
+    attachedText = await file.text();
+    $("fileLabel").textContent = file.name;
+    toast("File attached.");
+  } catch {
+    toast("Could not read this file.");
+  }
+
+  event.target.value = "";
 });
 
-/* ========================================
-   SEARCH AND LIBRARY
-======================================== */
-
+/* SEARCH */
 function searchChats() {
-    $("searchModal").classList.add("show");
-    $("searchInput").value = "";
-    renderSearch("");
-    $("searchInput").focus();
-    toggleSidebar(true);
+  $("searchModal").classList.add("show");
+  $("searchInput").value = "";
+  renderSearch("");
+  $("searchInput").focus();
+  toggleSidebar(true);
 }
 
 function renderSearch(query) {
-    const result = $("searchResults");
-    result.innerHTML = "";
+  const result = $("searchResults");
+  result.innerHTML = "";
 
-    const q = query.toLowerCase().trim();
+  const q = query.toLowerCase().trim();
 
-    const matches = chats.filter(chat =>
-        chat.title.toLowerCase().includes(q) ||
-        chat.messages.some(m => m.text.toLowerCase().includes(q))
-    );
+  const matches = chats.filter(c =>
+    c.title.toLowerCase().includes(q) ||
+    c.messages.some(m => m.text.toLowerCase().includes(q))
+  );
 
-    if (!matches.length) {
-        result.innerHTML = '<p style="font-size:11px;color:#8d98a2;padding:12px">No matching conversations found.</p>';
-        return;
-    }
+  if(!matches.length) {
+    result.innerHTML = '<p style="font-size:11px;color:#8d98a2;padding:12px">No matching conversations found.</p>';
+    return;
+  }
 
-    matches.forEach(chat => {
-        const button = document.createElement("button");
-        button.className = "history-item";
-        button.style.color = "#34424e";
-        button.style.padding = "13px";
-        button.textContent = chat.title;
-        button.onclick = () => {
-            closeModal("searchModal");
-            loadChat(chat.id);
-        };
-        result.appendChild(button);
-    });
+  matches.forEach(chat => {
+    const b = document.createElement("button");
+    b.className = "history-item";
+    b.style.color = "var(--text)";
+    b.textContent = chat.title;
+
+    b.onclick = () => {
+      closeModal("searchModal");
+      loadChat(chat.id);
+    };
+
+    result.appendChild(b);
+  });
 }
 
+/* LIBRARY */
 function openLibrary() {
-    const box = $("libraryContent");
-    box.innerHTML = "";
+  const box = $("libraryContent");
+  box.innerHTML = "";
 
-    if (!chats.length) {
-        box.innerHTML = '<p class="modal-desc">Your saved conversations will appear here.</p>';
-    } else {
-        chats.forEach(chat => {
-            const item = document.createElement("button");
-            item.className = "history-item";
-            item.style.color = "#34424e";
-            item.style.padding = "13px";
-            item.textContent = chat.title;
-            item.onclick = () => {
-                closeModal("libraryModal");
-                loadChat(chat.id);
-            };
-            box.appendChild(item);
-        });
-    }
+  if(!chats.length) {
+    box.innerHTML = '<p class="modal-desc">Your saved conversations will appear here.</p>';
+  } else {
+    chats.forEach(chat => {
+      const b = document.createElement("button");
+      b.className = "history-item";
+      b.style.color = "var(--text)";
+      b.textContent = chat.title;
 
-    $("libraryModal").classList.add("show");
-    toggleSidebar(true);
+      b.onclick = () => {
+        closeModal("libraryModal");
+        loadChat(chat.id);
+      };
+
+      box.appendChild(b);
+    });
+  }
+
+  $("libraryModal").classList.add("show");
+  toggleSidebar(true);
 }
 
-/* ========================================
-   SHARE
-======================================== */
-
+/* SHARE */
 async function shareChat() {
-    if (!currentChat || !currentChat.messages.length) {
-        toast("Start a conversation before sharing.");
-        return;
-    }
+  if(!currentChat || !currentChat.messages.length) {
+    toast("Start a conversation before sharing.");
+    return;
+  }
 
-    const text = currentChat.messages.map(m =>
-        (m.role === "user" ? "You: " : "Bunny AI: ") + m.text
-    ).join("\n\n");
+  const text = currentChat.messages.map(m =>
+    (m.role === "user" ? "You: " : "Bunny AI: ") + m.text
+  ).join("\n\n");
 
-    try {
-        await navigator.clipboard.writeText(text);
-        toast("Conversation copied. You can now share it.");
-    } catch {
-        toast("Unable to copy conversation.");
-    }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast("Conversation copied. You can now share it.");
+  } catch {
+    toast("Unable to copy conversation.");
+  }
 }
 
-/* ========================================
-   SIDEBAR
-======================================== */
-
+/* SIDEBAR TOGGLE WITH ANIMATION */
 function toggleSidebar(forceClose = false) {
-    if (forceClose) {
-        $("sidebar").classList.remove("open");
-        $("backdrop").classList.remove("show");
-        return;
+  const mobile = window.matchMedia("(max-width:700px)").matches;
+  const shell = document.querySelector(".shell");
+
+  if(mobile) {
+    if(forceClose) {
+      $("sidebar").classList.remove("open");
+      $("backdrop").classList.remove("show");
+    } else {
+      $("sidebar").classList.toggle("open");
+      $("backdrop").classList.toggle("show");
     }
 
-    $("sidebar").classList.toggle("open");
-    $("backdrop").classList.toggle("show");
+    const opened = $("sidebar").classList.contains("open");
+
+    $("sidebarToggle").innerHTML = opened
+      ? '<i class="fa-solid fa-xmark"></i>'
+      : '<i class="fa-solid fa-bars"></i>';
+
+    $("sidebarToggle").title = opened
+      ? "Close sidebar"
+      : "Open sidebar";
+
+  } else {
+    if(forceClose) return;
+
+    shell.classList.toggle("sidebar-hidden");
+
+    const hidden = shell.classList.contains("sidebar-hidden");
+
+    $("sidebarToggle").innerHTML =
+      '<i class="fa-solid fa-table-columns"></i>';
+
+    $("sidebarToggle").title = hidden
+      ? "Show sidebar"
+      : "Hide sidebar";
+  }
 }
 
-function showChat() {
-    toggleSidebar(true);
+function showChat(button) {
+  document.querySelectorAll(".nav-item").forEach(b =>
+    b.classList.remove("active")
+  );
+
+  button.classList.add("active");
+  toggleSidebar(true);
 }
 
-/* ========================================
-   STARTUP
-======================================== */
+/* DARK / LIGHT MODE */
+function applyTheme(theme) {
+  document.body.dataset.theme = theme;
 
+  const icon = $("themeToggle").querySelector("i");
+
+  icon.className = theme === "dark"
+    ? "fa-solid fa-sun"
+    : "fa-solid fa-moon";
+
+  $("themeToggle").title = theme === "dark"
+    ? "Switch to light mode"
+    : "Switch to dark mode";
+
+  document.querySelector('meta[name="theme-color"]').content =
+    theme === "dark" ? "#18232e" : "#f5f7f9";
+
+  try {
+    localStorage.setItem("bunny_theme",theme);
+  } catch {}
+}
+
+function toggleTheme() {
+  applyTheme(
+    document.body.dataset.theme === "dark"
+      ? "light"
+      : "dark"
+  );
+}
+
+/* INITIALIZATION */
 loadChats();
 
+function syncSidebarToggle() {
+  const mobile = window.matchMedia("(max-width:700px)").matches;
+  const opened = $("sidebar").classList.contains("open");
+  const hidden = document.querySelector(".shell").classList.contains("sidebar-hidden");
+
+  if(mobile) {
+    $("sidebarToggle").innerHTML = opened
+      ? '<i class="fa-solid fa-xmark"></i>'
+      : '<i class="fa-solid fa-bars"></i>';
+
+    $("sidebarToggle").title = opened
+      ? "Close sidebar"
+      : "Open sidebar";
+  } else {
+    $("sidebarToggle").innerHTML =
+      '<i class="fa-solid fa-table-columns"></i>';
+
+    $("sidebarToggle").title = hidden
+      ? "Show sidebar"
+      : "Hide sidebar";
+  }
+}
+
+window.addEventListener("resize",syncSidebarToggle);
+syncSidebarToggle();
+
+let savedTheme = "light";
+
+try {
+  savedTheme = localStorage.getItem("bunny_theme") || "light";
+} catch {}
+
+applyTheme(savedTheme);
+
 document.querySelectorAll(".overlay").forEach(overlay => {
-    overlay.addEventListener("click", event => {
-        if (event.target === overlay) {
-            overlay.classList.remove("show");
-        }
-    });
-});
-
-document.addEventListener("keydown", event => {
-    if (event.key === "Escape") {
-        document.querySelectorAll(".overlay.show").forEach(modal => {
-            modal.classList.remove("show");
-        });
-        toggleSidebar(true);
+  overlay.addEventListener("click",event => {
+    if(event.target === overlay) {
+      overlay.classList.remove("show");
     }
+  });
 });
 
+document.addEventListener("keydown",event => {
+  if(event.key === "Escape") {
+    document.querySelectorAll(".overlay.show").forEach(m =>
+      m.classList.remove("show")
+    );
+
+    toggleSidebar(true);
+  }
+});
 </script>
+
 </body>
 </html>
