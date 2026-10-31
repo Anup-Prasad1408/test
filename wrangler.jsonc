@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bunny-ai-api",
+  "main": "worker.js",
+  "compatibility_date": "2026-11-01",
+  "vars": {
+    "ALLOWED_ORIGINS": "https://anup-prasad1408.github.io,https://anup-prasad008.github.io"
+  },
+  "ratelimits": [
+    {
+      "name": "CHAT_RATE_LIMITER",
+      "namespace_id": "82620261101",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
+    }
+  ]
+}
