@@ -22,7 +22,7 @@ app = FastAPI(title="Bunny AI API", version="1.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://anup-prasad008.github.io",
+        "https://anup-prasad1408.github.io",
         "http://127.0.0.1:5500",
         "http://localhost:5500",
         "http://127.0.0.1:8000",
