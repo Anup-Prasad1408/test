@@ -1,8 +1,4 @@
-"""Bunny AI - Gemini generation layer with long-form coding support.
-
-The Gemini API key is read by the backend from its environment variable.
-No API key is accepted from or exposed to the browser.
-"""
+"""Bunny AI Gemini layer: balanced chat, complete code tasks and file understanding."""
 from __future__ import annotations
 
 import logging
@@ -14,83 +10,86 @@ from google import genai
 from google.genai import types
 
 logger = logging.getLogger("bunny-ai")
+DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
 
-# Gemini 4 Argon supports long decode up to the remaining 1M-token context
-# window when used with a recent Google GenAI SDK and automatic continuation.
-DEFAULT_GEMINI_MODEL = "gemini-4-argon"
-GEMINI_4_OUTPUT_TOKEN_CEILING = 1_048_576
-LEGACY_OUTPUT_TOKEN_CEILING = 65_536
-DEFAULT_STANDARD_OUTPUT_TOKENS = 65_536
-DEFAULT_CODE_OUTPUT_TOKENS = 1_048_576
+SYSTEM_PROMPT = """
+You are Bunny, a capable and friendly AI assistant created by Anup Prasad.
+Reply in the user's language (Hindi, Hinglish or English) and match their tone.
+Be helpful, accurate, natural and respectful. Do not add generic greetings to
+an ongoing conversation. Be reasonably concise for simple questions, but give
+complete explanations for complex questions and practical tasks.
 
-BASE_SYSTEM_PROMPT = """
-You are Bunny, a friendly, capable AI assistant created by Anup Prasad.
+For software development requests, provide complete, runnable implementations.
+Include every file that must be created or replaced, responsive design, working
+interactions, validation, useful loading/error states, and clear setup steps.
+Never omit essential code with ellipses, TODO placeholders, or phrases such as
+"same as above". Keep frontend secrets out of client-side code. Preserve the
+user's existing architecture and working features when modifying a project.
 
-LANGUAGE AND COMMUNICATION
-- Reply in the same language and general style as the user. Understand Hindi,
-  Hinglish and English, and do not switch languages unnecessarily.
-- Be warm, clear, accurate and respectful. Avoid filler, repeated greetings,
-  generic follow-up questions and unnecessary disclaimers.
-- Match the depth of the answer to the task. Simple factual questions should
-  stay reasonably concise; complex tasks must receive complete, detailed help.
-
-SOFTWARE AND WEBSITE DEVELOPMENT
-- Treat requests to build, create, develop, write or generate a website,
-  web app, UI, component, script or software project as implementation tasks.
-- When the user asks for a complete website or complete code, provide a real,
-  usable implementation rather than a tiny demonstration or outline.
-- Unless the user specifies another stack, prefer a complete self-contained
-  HTML document with embedded CSS and JavaScript for a simple website request.
-  If a project needs multiple files or a framework, show the file tree and give
-  the complete contents of every required file.
-- Build polished, modern, responsive work for desktop, tablet and mobile.
-  Include semantic HTML, accessible labels and keyboard behavior, consistent
-  design tokens, sensible spacing, useful states, and working interactions.
-- Include the CSS and JavaScript required by the requested interface. Do not
-  silently omit sections, shorten code with ellipses, write "same as above",
-  use TODO placeholders, or leave core interactions unimplemented.
-- Use safe input handling and do not expose API keys or secrets in frontend
-  code. Keep credentials on the server and explain required environment vars.
-- Explain how to run or deploy the result when that is relevant. Do not claim
-  that code was executed, deployed, or tested unless it actually was.
-- When changing existing code, preserve the user's existing structure and
-  behavior unless the user requests a redesign or removal.
-
-GENERAL TASKS
-- For explanations, tutorials and troubleshooting, give steps in a sensible
-  order and explain the important reasons, not just a one-line conclusion.
-- For plans, comparisons and recommendations, provide enough detail to make
-  the result actionable while distinguishing verified facts from assumptions.
+When a user attaches files, inspect the supplied file contents and visuals.
+Answer based on those attachments, identify the filenames you used when useful,
+and say clearly when a file format or scanned content could not be interpreted.
+Do not pretend to have inspected missing or unsupported file contents.
 """.strip()
 
 CODE_TASK_PROMPT = """
-
-RESPONSE MODE: FULL IMPLEMENTATION
-This request appears to need code or a software implementation.
-Prioritize completeness and correctness over brevity. Read the full request
-carefully and satisfy each requirement. Return all necessary code in complete
-fenced code blocks with the correct filename/language labels. For a website,
-include the full page structure, polished styling, responsive breakpoints,
-JavaScript behavior, validation, and important empty/loading/error states as
-appropriate. Do not replace code with pseudocode or a high-level explanation.
-If a single-file implementation is appropriate, make that file self-contained.
-If there are multiple files, include a file tree and the complete contents of
-all files that must be created or replaced. Keep explanations outside code
-blocks and concise enough that the code remains the focus.
+FULL IMPLEMENTATION MODE:
+Treat this as a real development task. Prioritize correctness and completeness
+rather than shortening the response. Follow every requirement. For websites,
+include full HTML, CSS and JavaScript (or all requested framework files),
+responsive desktop/mobile layouts, smooth but restrained animations, accessible
+controls, and working functionality. For multi-file projects, show the file tree
+and complete contents of every file that needs creating or replacing. Do not
+use pseudocode, ellipses, partial snippets, or TODO placeholders for required
+features. State any assumptions and deployment steps.
 """.strip()
 
-_CODE_KEYWORDS = re.compile(
-    r"\b(website|web\s*site|webpage|web\s*page|web\s*app|webapp|"
-    r"landing\s*page|portfolio|dashboard|frontend|front\s*end|backend|"
-    r"back\s*end|html|css|javascript|typescript|react|next\.?js|vue|"
-    r"angular|python|api|script|software|application|app|component|code|project)\b",
+FILE_TASK_PROMPT = """
+ATTACHMENT ANALYSIS MODE:
+Use the attached document text and/or media as primary evidence. Read relevant
+sections, tables, charts and visual details. Answer the user's actual question.
+For summaries, organize key points. For spreadsheets, explain relevant sheets,
+columns and calculations. For code files, explain or debug the supplied code.
+Do not invent content that is not present in the attachments.
+""".strip()
+
+_CODE_WORDS = re.compile(
+    r"\b(website|web\s*site|webpage|web\s*app|landing\s*page|portfolio|"
+    r"dashboard|frontend|backend|html|css|javascript|typescript|react|next\.?js|"
+    r"vue|angular|python|api|script|software|application|component|code|project)\b",
     re.IGNORECASE,
 )
-_ACTION_KEYWORDS = re.compile(
-    r"\b(create|build|make|develop|generate|write|design|implement|"
-    r"fix|update|complete|full|provide|code|bana|banao|banado|banana|"
-    r"likh|likho|likhkar|taiyar| तैयार)\b",
+_ACTION_WORDS = re.compile(
+    r"\b(create|build|make|develop|generate|write|design|implement|fix|update|"
+    r"complete|full|provide|bana|banao|banado|banana|likh|likho|likhkar|taiyar)\b",
     re.IGNORECASE,
 )
-_EXPLICIT_COMPLETE_CODE = re.compile(
-    r"\b(complete|full|entire|working|production\s*ready)\b.{0,45}"
+_COMPLETE_WORDS = re.compile(
+    r"\b(complete|full|entire|working|production\s*ready)\b.{0,60}"
+    r"\b(code|website|project|app|implementation)\b|"
+    r"\b(code|website|project|app)\b.{0,60}"
+    r"\b(complete|full|entire|working)\b",
+    re.IGNORECASE,
+)
+
+
+def get_model_name() -> str:
+    return os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL).strip() or DEFAULT_GEMINI_MODEL
+
+
+def _model_output_ceiling(model: str) -> int:
+    """Keep configured output limits below the selected model's known ceiling."""
+    name = model.lower()
+    if name.startswith("gemini-4-argon"):
+        return 1_048_576
+    # Current Gemini Flash-family models support up to 65,536 output tokens.
+    return 65_536
+
+
+def _token_limit(env_name: str, default: int, model: str) -> int:
+    try:
+        requested = int(os.getenv(env_name, str(default)))
+    except (TypeError, ValueError):
+        requested = default
+    return max(1, min(requested, _model_output_ceiling(model)))
+
