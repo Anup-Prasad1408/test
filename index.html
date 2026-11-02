@@ -674,11 +674,109 @@
       if (activeMode !== "Agent" && modeInstructions[activeMode]) requestMessage = modeInstructions[activeMode] + cleanText;
 
       try {
-        const response = await fetch(API_BASE_URL.replace(/\/$/, "") + "/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: requestMessage, session_id: currentChat.sessionId || null })
-        });
+        const data = await sendMessageToBunny(
+    requestMessage,
+    currentChat.sessionId || null
+);
+
+currentChat.sessionId =
+    data.session_id ||
+    currentChat.sessionId;
+
+const reply =
+    data.reply ||
+    "I couldn't generate a response.";
+
+typing.remove();
+
+appendMessage(
+    "assistant",
+    reply
+);
+
+persistCurrentChat();
+
+
+// Handle Bunny actions
+if (
+    data.action &&
+    data.action.type === "clear_chat"
+) {
+
+    currentChat.messages = [];
+
+    messageList.innerHTML = "";
+}
+
+
+if (
+    data.action &&
+    data.action.type === "open_url" &&
+    typeof data.action.url === "string"
+) {
+
+    try {
+
+        const actionURL =
+            new URL(data.action.url);
+
+        if (
+            actionURL.protocol === "https:" ||
+            actionURL.protocol === "http:"
+        ) {
+
+            const openAction =
+                document.createElement("button");
+
+            openAction.type = "button";
+
+            openAction.className =
+                "message-action";
+
+            openAction.textContent =
+                "Open " +
+                (
+                    data.action.label ||
+                    "link"
+                );
+
+            openAction.addEventListener(
+                "click",
+                () => {
+
+                    window.open(
+                        actionURL.href,
+                        "_blank",
+                        "noopener,noreferrer"
+                    );
+
+                }
+            );
+
+            const lastMessage =
+                messageList.lastElementChild;
+
+            const actions =
+                lastMessage &&
+                lastMessage.querySelector(
+                    ".message-actions"
+                );
+
+            if (actions) {
+                actions.appendChild(
+                    openAction
+                );
+            }
+        }
+
+    } catch (error) {
+
+        console.warn(
+            "Invalid action URL:",
+            error
+        );
+    }
+}
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
           const detail = data.detail || data.message || "The backend could not process this request.";
