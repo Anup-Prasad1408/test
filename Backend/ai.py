@@ -1,102 +1,96 @@
-"""Bunny AI - Gemini/AI layer.
+"""Bunny AI - Gemini generation layer with long-form coding support.
 
-The API key is supplied by the web frontend for each request and is not
-read from key.txt or persisted by this module.
+The Gemini API key is read by the backend from its environment variable.
+No API key is accepted from or exposed to the browser.
 """
 from __future__ import annotations
 
+import logging
 import os
+import re
 from typing import Any
 
 from google import genai
 from google.genai import types
 
-DEFAULT_GEMINI_MODEL = "gemini-flash-lite-latest"
+logger = logging.getLogger("bunny-ai")
 
-SYSTEM_PROMPT = """
-You are Bunny, a friendly and helpful AI chatbot created by Anup Prasad.
-Respond in a warm, engaging, and fun way, like a best friend.
-Understand and reply in the user's language (e.g., if they speak Hindi, respond in Hindi; if English, in English).
-Keep replies concise but natural. If the user asks something specific, answer accurately, but always add a friendly touch.
-Be empathetic, fun, and supportive in all interactions.
-Avoid repeating generic questions like "how are you" unless directly asked. Respond based on the user's input.
+# Gemini 4 Argon supports long decode up to the remaining 1M-token context
+# window when used with a recent Google GenAI SDK and automatic continuation.
+DEFAULT_GEMINI_MODEL = "gemini-4-argon"
+GEMINI_4_OUTPUT_TOKEN_CEILING = 1_048_576
+LEGACY_OUTPUT_TOKEN_CEILING = 65_536
+DEFAULT_STANDARD_OUTPUT_TOKENS = 65_536
+DEFAULT_CODE_OUTPUT_TOKENS = 1_048_576
+
+BASE_SYSTEM_PROMPT = """
+You are Bunny, a friendly, capable AI assistant created by Anup Prasad.
+
+LANGUAGE AND COMMUNICATION
+- Reply in the same language and general style as the user. Understand Hindi,
+  Hinglish and English, and do not switch languages unnecessarily.
+- Be warm, clear, accurate and respectful. Avoid filler, repeated greetings,
+  generic follow-up questions and unnecessary disclaimers.
+- Match the depth of the answer to the task. Simple factual questions should
+  stay reasonably concise; complex tasks must receive complete, detailed help.
+
+SOFTWARE AND WEBSITE DEVELOPMENT
+- Treat requests to build, create, develop, write or generate a website,
+  web app, UI, component, script or software project as implementation tasks.
+- When the user asks for a complete website or complete code, provide a real,
+  usable implementation rather than a tiny demonstration or outline.
+- Unless the user specifies another stack, prefer a complete self-contained
+  HTML document with embedded CSS and JavaScript for a simple website request.
+  If a project needs multiple files or a framework, show the file tree and give
+  the complete contents of every required file.
+- Build polished, modern, responsive work for desktop, tablet and mobile.
+  Include semantic HTML, accessible labels and keyboard behavior, consistent
+  design tokens, sensible spacing, useful states, and working interactions.
+- Include the CSS and JavaScript required by the requested interface. Do not
+  silently omit sections, shorten code with ellipses, write "same as above",
+  use TODO placeholders, or leave core interactions unimplemented.
+- Use safe input handling and do not expose API keys or secrets in frontend
+  code. Keep credentials on the server and explain required environment vars.
+- Explain how to run or deploy the result when that is relevant. Do not claim
+  that code was executed, deployed, or tested unless it actually was.
+- When changing existing code, preserve the user's existing structure and
+  behavior unless the user requests a redesign or removal.
+
+GENERAL TASKS
+- For explanations, tutorials and troubleshooting, give steps in a sensible
+  order and explain the important reasons, not just a one-line conclusion.
+- For plans, comparisons and recommendations, provide enough detail to make
+  the result actionable while distinguishing verified facts from assumptions.
 """.strip()
 
+CODE_TASK_PROMPT = """
 
-def get_model_name() -> str:
-    return os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL)
+RESPONSE MODE: FULL IMPLEMENTATION
+This request appears to need code or a software implementation.
+Prioritize completeness and correctness over brevity. Read the full request
+carefully and satisfy each requirement. Return all necessary code in complete
+fenced code blocks with the correct filename/language labels. For a website,
+include the full page structure, polished styling, responsive breakpoints,
+JavaScript behavior, validation, and important empty/loading/error states as
+appropriate. Do not replace code with pseudocode or a high-level explanation.
+If a single-file implementation is appropriate, make that file self-contained.
+If there are multiple files, include a file tree and the complete contents of
+all files that must be created or replaced. Keep explanations outside code
+blocks and concise enough that the code remains the focus.
+""".strip()
 
-
-def _build_contents(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    contents: list[dict[str, Any]] = []
-    for message in messages:
-        role = message.get("role")
-        content = str(message.get("content", "")).strip()
-        if not content or role == "system":
-            continue
-        if role == "assistant":
-            role = "model"
-        elif role != "user":
-            continue
-        contents.append({"role": role, "parts": [{"text": content}]})
-    return contents
-
-
-def generate_gemini_response(
-    api_key: str,
-    messages: list[dict[str, Any]],
-    temperature: float = 1.0,
-    max_output_tokens: int = 5000,
-) -> str:
-    api_key = (api_key or "").strip()
-    if not api_key:
-        raise ValueError("Gemini API key is missing.")
-
-    system_instruction = next(
-        (str(m.get("content", "")) for m in messages if m.get("role") == "system"),
-        SYSTEM_PROMPT,
-    )
-    contents = _build_contents(messages)
-    if not contents:
-        raise ValueError("No user message was supplied.")
-
-    client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-        model=get_model_name(),
-        contents=contents,
-        config=types.GenerateContentConfig(
-            system_instruction=system_instruction,
-            temperature=temperature,
-            max_output_tokens=max_output_tokens,
-        ),
-    )
-    text = getattr(response, "text", None)
-    if not text:
-        raise RuntimeError("Gemini returned an empty response.")
-    return text.strip()
-
-
-def ask_ai(api_key: str, question: str, messages: list[dict[str, Any]]) -> str:
-    question = (question or "").strip()
-    if not question:
-        raise ValueError("Question cannot be empty.")
-    working_messages = list(messages)
-    working_messages.append({"role": "user", "content": question})
-    return generate_gemini_response(api_key, working_messages, 1.0, 5000)
-
-
-def generate_summary(api_key: str, messages: list[dict[str, Any]]) -> str:
-    user_messages = [m for m in messages if m.get("role") == "user"]
-    if len(user_messages) <= 2:
-        return ""
-
-    convo_messages = [m for m in messages if m.get("role") != "system"]
-    convo_messages.append({
-        "role": "user",
-        "content": (
-            "Summarize the key points, topics discussed, user preferences, "
-            "and important information from this conversation in 2-3 sentences. "
-            "Focus on what Bunny should remember for future interactions."
-        ),
-    })
-    return generate_gemini_response(api_key, convo_messages, 0.5, 200)
+_CODE_KEYWORDS = re.compile(
+    r"\b(website|web\s*site|webpage|web\s*page|web\s*app|webapp|"
+    r"landing\s*page|portfolio|dashboard|frontend|front\s*end|backend|"
+    r"back\s*end|html|css|javascript|typescript|react|next\.?js|vue|"
+    r"angular|python|api|script|software|application|app|component|code|project)\b",
+    re.IGNORECASE,
+)
+_ACTION_KEYWORDS = re.compile(
+    r"\b(create|build|make|develop|generate|write|design|implement|"
+    r"fix|update|complete|full|provide|code|bana|banao|banado|banana|"
+    r"likh|likho|likhkar|taiyar| तैयार)\b",
+    re.IGNORECASE,
+)
+_EXPLICIT_COMPLETE_CODE = re.compile(
+    r"\b(complete|full|entire|working|production\s*ready)\b.{0,45}"
