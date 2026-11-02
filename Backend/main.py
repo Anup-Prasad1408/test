@@ -1,9 +1,6 @@
-"""Bunny AI FastAPI backend.
 
-Supports JSON chat requests and multipart/form-data requests with multiple
-attachments. Configure GEMINI_API_KEY on Render; never put the key in frontend
-code or commit it to GitHub.
-"""
+"""Bunny AI FastAPI Backend."""
+
 from __future__ import annotations
 
 import csv
@@ -15,26 +12,30 @@ import os
 import re
 import secrets
 import threading
+
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.concurrency import run_in_threadpool
-from starlette.datastructures import UploadFile as StarletteUploadFile
+from starlette.datastructures import UploadFile
 
 from ai import ask_ai, get_model_name
 from bunny import Bunny
 from memory import delete_session
 
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("bunny-api")
 
 app = FastAPI(
     title="Bunny AI API",
-    version="4.0.0",
-    description="Bunny AI chat API with Gemini and supported file attachments.",
+    version="4.0.0"
 )
+
+
+# ---------------- CORS ----------------
 
 DEFAULT_ORIGINS = [
     "https://anup-prasad1408.github.io",
@@ -45,39 +46,37 @@ DEFAULT_ORIGINS = [
     "http://127.0.0.1:8000",
 ]
 
+configured_origins = os.getenv("CORS_ORIGINS", "").strip()
 
-def get_allowed_origins() -> list[str]:
-    configured = os.getenv("CORS_ORIGINS", "").strip()
-    source = configured.split(",") if configured else DEFAULT_ORIGINS
-
-    return [
-        origin.strip().rstrip("/")
-        for origin in source
-        if origin.strip() and origin.strip() != "*"
-    ]
-
+origins = (
+    [x.strip().rstrip("/") for x in configured_origins.split(",") if x.strip()]
+    if configured_origins
+    else DEFAULT_ORIGINS
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_allowed_origins(),
+    allow_origins=origins,
     allow_credentials=False,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    max_age=600,
 )
 
-_ACTIVE_BUNNIES: dict[str, Bunny] = {}
-_SESSION_LOCKS: dict[str, threading.RLock] = {}
-_SESSION_MAP_LOCK = threading.Lock()
+
+# ---------------- SETTINGS ----------------
 
 MAX_FILES = 8
-MAX_FILE_BYTES = 15 * 1024 * 1024
-MAX_TOTAL_BYTES = 25 * 1024 * 1024
-MAX_TOTAL_TEXT_CHARS = 60_000
-MAX_MESSAGE_CHARS = 20_000
-MAX_HISTORY_MESSAGES = 12
+MAX_FILE_SIZE = 15 * 1024 * 1024
+MAX_TOTAL_SIZE = 25 * 1024 * 1024
+MAX_MESSAGE_LENGTH = 20000
+MAX_TEXT_LENGTH = 60000
 
-IMAGE_MIME_TYPES = {
+ACTIVE_SESSIONS = {}
+SESSION_LOCKS = {}
+SESSION_MAP_LOCK = threading.Lock()
+
+
+IMAGE_TYPES = {
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
     ".png": "image/png",
@@ -85,32 +84,27 @@ IMAGE_MIME_TYPES = {
     ".gif": "image/gif",
 }
 
-BINARY_GEMINI_TYPES = {".pdf"}
-
 TEXT_EXTENSIONS = {
-    ".txt", ".md", ".markdown", ".csv", ".tsv",
-    ".json", ".jsonl", ".xml", ".html", ".htm",
-    ".css", ".js", ".mjs", ".cjs", ".ts", ".tsx",
-    ".jsx", ".py", ".java", ".c", ".cpp", ".h",
-    ".hpp", ".cs", ".php", ".rb", ".go", ".rs",
-    ".sql", ".yaml", ".yml", ".toml", ".ini",
-    ".cfg", ".log", ".sh", ".bat", ".ps1",
+    ".txt", ".md", ".csv", ".tsv", ".json",
+    ".jsonl", ".xml", ".html", ".htm", ".css",
+    ".js", ".mjs", ".ts", ".tsx", ".jsx",
+    ".py", ".java", ".c", ".cpp", ".h",
+    ".cs", ".php", ".rb", ".go", ".rs",
+    ".sql", ".yaml", ".yml", ".toml",
+    ".ini", ".log", ".sh", ".bat", ".ps1"
 }
 
 SUPPORTED_EXTENSIONS = (
-    IMAGE_MIME_TYPES
-    | {".pdf": "application/pdf"}
-    | {extension: "text/plain" for extension in TEXT_EXTENSIONS}
-    | {
-        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        ".xls": "application/vnd.ms-excel",
-    }
+    set(IMAGE_TYPES)
+    | {".pdf", ".docx", ".pptx", ".xlsx", ".xls"}
+    | TEXT_EXTENSIONS
 )
 
 
-def get_api_key() -> str:
+# ---------------- API KEY ----------------
+
+def get_api_key():
+
     return (
         os.getenv("GEMINI_API_KEY")
         or os.getenv("GOOGLE_API_KEY")
@@ -118,83 +112,85 @@ def get_api_key() -> str:
     ).strip()
 
 
-def get_session_id(value: str | None) -> str:
-    candidate = (value or "").strip()
+# ---------------- SESSION MANAGEMENT ----------------
 
-    if not candidate:
+def validate_session_id(value=None):
+
+    value = (value or "").strip()
+
+    if not value:
         return secrets.token_urlsafe(24)
 
-    if len(candidate) > 160 or not re.fullmatch(
-        r"[A-Za-z0-9_-]+", candidate
+    if len(value) > 160 or not re.fullmatch(
+        r"[A-Za-z0-9_-]+", value
     ):
         raise HTTPException(
             status_code=400,
-            detail="Invalid session_id."
+            detail="Invalid session ID."
         )
 
-    return candidate
+    return value
 
 
-def get_session_resources(
-    session_id: str
-) -> tuple[Bunny, threading.RLock]:
+def get_session(session_id):
 
-    with _SESSION_MAP_LOCK:
+    with SESSION_MAP_LOCK:
 
-        bunny = _ACTIVE_BUNNIES.get(session_id)
+        bunny = ACTIVE_SESSIONS.get(session_id)
 
         if bunny is None:
             bunny = Bunny(session_id)
-            _ACTIVE_BUNNIES[session_id] = bunny
+            ACTIVE_SESSIONS[session_id] = bunny
 
-        lock = _SESSION_LOCKS.get(session_id)
+        lock = SESSION_LOCKS.get(session_id)
 
         if lock is None:
             lock = threading.RLock()
-            _SESSION_LOCKS[session_id] = lock
+            SESSION_LOCKS[session_id] = lock
 
         return bunny, lock
 
 
-def normalize_history_context(raw: Any) -> list[dict[str, str]]:
+# ---------------- HISTORY ----------------
 
-    if isinstance(raw, str):
+def clean_history(history):
+
+    if isinstance(history, str):
+
         try:
-            raw = json.loads(raw)
-        except json.JSONDecodeError:
+            history = json.loads(history)
+        except Exception:
             return []
 
-    if not isinstance(raw, list):
+    if not isinstance(history, list):
         return []
 
-    cleaned = []
+    result = []
 
-    for item in raw[-MAX_HISTORY_MESSAGES:]:
+    for item in history[-12:]:
 
         if not isinstance(item, dict):
             continue
 
-        role = str(item.get("role", "")).strip().lower()
+        role = str(item.get("role", "")).lower()
         content = str(item.get("content", "")).strip()
 
-        if role in {"user", "assistant"} and content:
+        if role in ("user", "assistant") and content:
 
-            cleaned.append({
+            result.append({
                 "role": role,
-                "content": content[:MAX_MESSAGE_CHARS]
+                "content": content[:MAX_MESSAGE_LENGTH]
             })
 
-    return cleaned
+    return result
 
 
-def decode_text(data: bytes) -> str:
+# ---------------- TEXT EXTRACTION ----------------
 
-    for encoding in (
-        "utf-8-sig",
-        "utf-8",
-        "cp1252",
-        "latin-1"
-    ):
+def decode_text(data):
+
+    for encoding in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
+
         try:
             return data.decode(encoding)
         except UnicodeDecodeError:
@@ -203,75 +199,69 @@ def decode_text(data: bytes) -> str:
     return data.decode("utf-8", errors="replace")
 
 
-def extract_docx(data: bytes) -> str:
+def extract_docx(data):
 
     from docx import Document
 
-    document = Document(io.BytesIO(data))
-    blocks = []
+    doc = Document(io.BytesIO(data))
 
-    for paragraph in document.paragraphs:
+    output = []
 
-        text = paragraph.text.strip()
+    for paragraph in doc.paragraphs:
 
-        if text:
-            blocks.append(text)
+        if paragraph.text.strip():
+            output.append(paragraph.text.strip())
 
-    for table_index, table in enumerate(
-        document.tables, start=1
-    ):
-
-        blocks.append(f"[Table {table_index}]")
+    for table in doc.tables:
 
         for row in table.rows:
 
-            blocks.append(
+            output.append(
                 " | ".join(
-                    cell.text.strip().replace("\n", " ")
+                    cell.text.strip()
                     for cell in row.cells
                 )
             )
 
-    return "\n".join(blocks)
+    return "\n".join(output)
 
 
-def extract_pptx(data: bytes) -> str:
+def extract_pptx(data):
 
     from pptx import Presentation
 
     presentation = Presentation(io.BytesIO(data))
-    blocks = []
 
-    for slide_number, slide in enumerate(
-        presentation.slides, start=1
+    output = []
+
+    for number, slide in enumerate(
+        presentation.slides, 1
     ):
 
-        blocks.append(f"[Slide {slide_number}]")
+        output.append(f"\n[Slide {number}]")
 
         for shape in slide.shapes:
 
             if getattr(shape, "has_text_frame", False):
 
-                text = shape.text.strip()
-
-                if text:
-                    blocks.append(text)
+                if shape.text.strip():
+                    output.append(shape.text.strip())
 
             if getattr(shape, "has_table", False):
 
                 for row in shape.table.rows:
 
-                    blocks.append(
+                    output.append(
                         " | ".join(
                             cell.text.strip()
                             for cell in row.cells
                         )
                     )
 
-    return "\n".join(blocks)
+    return "\n".join(output)
 
 
-def extract_xlsx(data: bytes) -> str:
+def extract_xlsx(data):
 
     from openpyxl import load_workbook
 
@@ -281,37 +271,37 @@ def extract_xlsx(data: bytes) -> str:
         data_only=True
     )
 
-    blocks = []
+    output = []
 
     try:
 
         for sheet in workbook.worksheets:
 
-            blocks.append(f"[Sheet: {sheet.title}]")
+            output.append(f"\n[Sheet: {sheet.title}]")
 
             for row in sheet.iter_rows(values_only=True):
 
                 values = [
-                    "" if value is None else str(value)
+                    str(value) if value is not None else ""
                     for value in row
                 ]
 
                 if any(values):
-                    blocks.append(" | ".join(values))
+                    output.append(" | ".join(values))
 
-                if sum(len(item) for item in blocks) > MAX_TOTAL_TEXT_CHARS:
+                if sum(map(len, output)) >= MAX_TEXT_LENGTH:
                     break
 
-            if sum(len(item) for item in blocks) > MAX_TOTAL_TEXT_CHARS:
+            if sum(map(len, output)) >= MAX_TEXT_LENGTH:
                 break
 
     finally:
         workbook.close()
 
-    return "\n".join(blocks)
+    return "\n".join(output)
 
 
-def extract_xls(data: bytes) -> str:
+def extract_xls(data):
 
     import xlrd
 
@@ -320,86 +310,45 @@ def extract_xls(data: bytes) -> str:
         on_demand=True
     )
 
-    blocks = []
+    output = []
 
     try:
 
         for sheet in workbook.sheets():
 
-            blocks.append(f"[Sheet: {sheet.name}]")
+            output.append(f"\n[Sheet: {sheet.name}]")
 
-            max_rows = min(sheet.nrows, 500)
-            max_cols = min(sheet.ncols, 60)
-
-            for row_index in range(max_rows):
+            for row_index in range(min(sheet.nrows, 500)):
 
                 values = [
                     str(sheet.cell_value(row_index, col))
-                    for col in range(max_cols)
+                    for col in range(min(sheet.ncols, 60))
                 ]
 
                 if any(values):
-                    blocks.append(" | ".join(values))
+                    output.append(" | ".join(values))
 
-                if sum(len(item) for item in blocks) > MAX_TOTAL_TEXT_CHARS:
+                if sum(map(len, output)) >= MAX_TEXT_LENGTH:
                     break
-
-            if sum(len(item) for item in blocks) > MAX_TOTAL_TEXT_CHARS:
-                break
 
     finally:
         workbook.release_resources()
 
-    return "\n".join(blocks)
+    return "\n".join(output)
 
 
-def extract_csv(data: bytes, extension: str) -> str:
+def extract_file(filename, data, mime_type):
 
-    content = decode_text(data)
+    extension = Path(filename).suffix.lower()
 
-    delimiter = "\t" if extension == ".tsv" else ","
-
-    try:
-
-        rows = csv.reader(
-            io.StringIO(content),
-            delimiter=delimiter
-        )
-
-        return "\n".join(
-            " | ".join(cell for cell in row)
-            for row in rows
-        )
-
-    except csv.Error:
-        return content
-
-
-def process_attachment(
-    filename: str,
-    mime_type: str,
-    data: bytes
-) -> dict[str, Any]:
-
-    suffix = Path(filename).suffix.lower()
-
-    if suffix not in SUPPORTED_EXTENSIONS:
+    if extension not in SUPPORTED_EXTENSIONS:
 
         raise HTTPException(
             status_code=415,
-            detail=(
-                f"Unsupported file type: {suffix or 'unknown'}. "
-                "Supported: images, PDF, DOCX, PPTX, XLSX, XLS "
-                "and common text/code files."
-            )
+            detail=f"Unsupported file format: {extension}"
         )
 
-    expected_mime = SUPPORTED_EXTENSIONS[suffix]
-
-    if not mime_type or mime_type == "application/octet-stream":
-        mime_type = expected_mime
-
-    if suffix in IMAGE_MIME_TYPES or suffix in BINARY_GEMINI_TYPES:
+    if extension in IMAGE_TYPES or extension == ".pdf":
 
         return {
             "name": filename,
@@ -407,55 +356,48 @@ def process_attachment(
             "data": data
         }
 
-    try:
+    if extension == ".docx":
+        content = extract_docx(data)
 
-        if suffix == ".docx":
-            extracted = extract_docx(data)
+    elif extension == ".pptx":
+        content = extract_pptx(data)
 
-        elif suffix == ".pptx":
-            extracted = extract_pptx(data)
+    elif extension == ".xlsx":
+        content = extract_xlsx(data)
 
-        elif suffix == ".xlsx":
-            extracted = extract_xlsx(data)
+    elif extension == ".xls":
+        content = extract_xls(data)
 
-        elif suffix == ".xls":
-            extracted = extract_xls(data)
+    elif extension in (".csv", ".tsv"):
 
-        elif suffix in {".csv", ".tsv"}:
-            extracted = extract_csv(data, suffix)
+        delimiter = "\t" if extension == ".tsv" else ","
 
-        else:
-            extracted = decode_text(data)
-
-    except Exception as exc:
-
-        logger.exception(
-            "Could not parse uploaded file %s",
-            filename
-        )
-
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Could not read {filename}. "
-                "Check that the file is valid and not password-protected."
+        try:
+            rows = csv.reader(
+                io.StringIO(decode_text(data)),
+                delimiter=delimiter
             )
-        ) from exc
 
-    extracted = (extracted or "").strip()
+            content = "\n".join(
+                " | ".join(row)
+                for row in rows
+            )
 
-    if not extracted:
-        extracted = "[No readable text was extracted from this file.]"
+        except csv.Error:
+            content = decode_text(data)
+
+    else:
+        content = decode_text(data)
 
     return {
         "name": filename,
-        "text": extracted[:MAX_TOTAL_TEXT_CHARS]
+        "text": content[:MAX_TEXT_LENGTH]
     }
 
 
-async def read_chat_request(
-    request: Request
-) -> tuple[str, str | None, Any, list[StarletteUploadFile]]:
+# ---------------- REQUEST PARSER ----------------
+
+async def parse_request(request: Request):
 
     content_type = request.headers.get(
         "content-type", ""
@@ -463,23 +405,12 @@ async def read_chat_request(
 
     message = ""
     session_id = None
-    history_context = None
-    uploads = []
+    history = None
+    files = []
 
-    if (
-        "multipart/form-data" in content_type
-        or "application/x-www-form-urlencoded" in content_type
-    ):
+    if "multipart/form-data" in content_type:
 
-        try:
-            form = await request.form()
-
-        except Exception as exc:
-
-            raise HTTPException(
-                status_code=400,
-                detail="Could not parse form data."
-            ) from exc
+        form = await request.form()
 
         message = str(
             form.get("message")
@@ -487,54 +418,42 @@ async def read_chat_request(
             or ""
         )
 
-        session_id = str(
-            form.get("session_id") or ""
-        ) or None
+        session_id = form.get("session_id")
+        history = form.get("history_context")
 
-        history_context = form.get("history_context")
+        for field in ("files", "files[]", "file"):
 
-        for field_name in ("files", "files[]", "file"):
+            for item in form.getlist(field):
 
-            for item in form.getlist(field_name):
-
-                if isinstance(item, StarletteUploadFile):
-                    uploads.append(item)
+                if isinstance(item, UploadFile):
+                    files.append(item)
 
     elif "application/json" in content_type or not content_type:
 
         try:
             payload = await request.json()
-
-        except Exception as exc:
-
+        except Exception:
             raise HTTPException(
                 status_code=400,
-                detail=(
-                    "Request body must be valid JSON "
-                    "or multipart form data."
-                )
-            ) from exc
+                detail="Invalid JSON request."
+            )
 
         if not isinstance(payload, dict):
-
             raise HTTPException(
                 status_code=400,
-                detail="JSON request body must be an object."
+                detail="JSON body must be an object."
             )
 
         message = str(
             payload.get("message")
             or payload.get("prompt")
             or payload.get("text")
-            or payload.get("query")
             or ""
         )
 
-        session_id = str(
-            payload.get("session_id") or ""
-        ) or None
+        session_id = payload.get("session_id")
 
-        history_context = payload.get(
+        history = payload.get(
             "history_context",
             payload.get("history")
         )
@@ -543,18 +462,20 @@ async def read_chat_request(
 
         raise HTTPException(
             status_code=415,
-            detail="Use application/json or multipart/form-data."
+            detail="Unsupported request content type."
         )
 
-    if len(uploads) > MAX_FILES:
+    if len(files) > MAX_FILES:
 
         raise HTTPException(
             status_code=413,
-            detail=f"You can upload up to {MAX_FILES} files per message."
+            detail=f"Maximum {MAX_FILES} files allowed."
         )
 
-    return message.strip(), session_id, history_context, uploads
+    return message.strip(), session_id, history, files
 
+
+# ---------------- HEALTH ----------------
 
 @app.get("/")
 async def root():
@@ -567,42 +488,39 @@ async def root():
     }
 
 
-@app.get("/api/health")
 @app.get("/health")
+@app.get("/api/health")
 async def health():
-
-    key_configured = bool(get_api_key())
 
     return {
         "status": "ok",
-        "service": "Bunny AI API",
-        "gemini_configured": key_configured,
+        "service": "Bunny AI",
+        "gemini_configured": bool(get_api_key()),
         "model": get_model_name()
     }
 
 
+# ---------------- MAIN CHAT API ----------------
+
 @app.post("/api/chat")
 async def chat(request: Request):
 
-    (
-        message,
-        requested_session_id,
-        history_context,
-        uploads
-    ) = await read_chat_request(request)
+    message, requested_session, history, uploads = (
+        await parse_request(request)
+    )
 
-    if len(message) > MAX_MESSAGE_CHARS:
+    if len(message) > MAX_MESSAGE_LENGTH:
 
         raise HTTPException(
             status_code=413,
-            detail=f"Message is too long. Limit: {MAX_MESSAGE_CHARS} characters."
+            detail="Message is too long."
         )
 
     if not message and not uploads:
 
         raise HTTPException(
             status_code=422,
-            detail="Enter a message or attach at least one file."
+            detail="Enter a message or upload a file."
         )
 
     api_key = get_api_key()
@@ -611,21 +529,18 @@ async def chat(request: Request):
 
         raise HTTPException(
             status_code=503,
-            detail=(
-                "Gemini API key is not configured. "
-                "Add GEMINI_API_KEY in Render → Environment."
-            )
+            detail="GEMINI_API_KEY is not configured on Render."
         )
 
-    session_id = get_session_id(requested_session_id)
+    session_id = validate_session_id(requested_session)
 
-    bunny, session_lock = get_session_resources(session_id)
+    bunny, lock = get_session(session_id)
 
-    context = normalize_history_context(history_context)
+    context = clean_history(history)
 
     if context:
 
-        with session_lock:
+        with lock:
 
             system_message = (
                 bunny.messages[0]
@@ -639,10 +554,10 @@ async def chat(request: Request):
                 + context
             )
 
-    media_parts = []
-    total_upload_bytes = 0
-    total_extracted_chars = 0
-    file_names = []
+    attachments = []
+    filenames = []
+    total_size = 0
+    total_text = 0
 
     for upload in uploads:
 
@@ -650,29 +565,29 @@ async def chat(request: Request):
             upload.filename or "attachment"
         ).name[:180]
 
-        raw = await upload.read(MAX_FILE_BYTES + 1)
+        data = await upload.read(MAX_FILE_SIZE + 1)
 
-        if len(raw) > MAX_FILE_BYTES:
-
-            raise HTTPException(
-                status_code=413,
-                detail=f"{filename} is larger than 15 MB."
-            )
-
-        total_upload_bytes += len(raw)
-
-        if total_upload_bytes > MAX_TOTAL_BYTES:
+        if len(data) > MAX_FILE_SIZE:
 
             raise HTTPException(
                 status_code=413,
-                detail="Combined attachment size must be 25 MB or less."
+                detail=f"{filename} exceeds the 15 MB limit."
             )
 
-        if not raw:
+        if not data:
 
             raise HTTPException(
                 status_code=400,
                 detail=f"{filename} is empty."
+            )
+
+        total_size += len(data)
+
+        if total_size > MAX_TOTAL_SIZE:
+
+            raise HTTPException(
+                status_code=413,
+                detail="Total attachment size exceeds 25 MB."
             )
 
         mime_type = (
@@ -681,66 +596,58 @@ async def chat(request: Request):
             or "application/octet-stream"
         )
 
-        part = process_attachment(
+        attachment = extract_file(
             filename,
-            mime_type,
-            raw
+            data,
+            mime_type
         )
 
-        if isinstance(part.get("text"), str):
+        if "text" in attachment:
 
-            remaining = (
-                MAX_TOTAL_TEXT_CHARS
-                - total_extracted_chars
-            )
+            remaining = MAX_TEXT_LENGTH - total_text
 
             if remaining <= 0:
 
                 raise HTTPException(
                     status_code=413,
-                    detail=(
-                        "Extracted attachment text exceeds "
-                        "the 60,000-character limit."
-                    )
+                    detail="Extracted text exceeds the limit."
                 )
 
-            part["text"] = part["text"][:remaining]
+            attachment["text"] = attachment["text"][:remaining]
+            total_text += len(attachment["text"])
 
-            total_extracted_chars += len(part["text"])
-
-        media_parts.append(part)
-        file_names.append(filename)
+        attachments.append(attachment)
+        filenames.append(filename)
 
     user_message = message or (
-        "Please analyze the attached file(s), explain their "
-        "important content, and answer based on them."
+        "Please analyze the attached files and explain their contents."
     )
 
-    api_user_text = user_message
+    stored_message = user_message
 
-    if file_names:
+    if filenames:
 
-        api_user_text += (
+        stored_message += (
             "\n\n[Attached files: "
-            + ", ".join(file_names)
+            + ", ".join(filenames)
             + "]"
         )
 
-    def process_turn():
+    def generate_response():
 
-        with session_lock:
+        with lock:
 
-            if media_parts:
+            if attachments:
 
                 reply = ask_ai(
                     api_key,
                     user_message,
                     bunny.messages,
-                    media_parts=media_parts
+                    media_parts=attachments
                 )
 
                 bunny._save_turn(
-                    api_user_text,
+                    stored_message,
                     reply
                 )
 
@@ -756,82 +663,80 @@ async def chat(request: Request):
 
     try:
 
-        result = await run_in_threadpool(process_turn)
+        result = await run_in_threadpool(
+            generate_response
+        )
 
     except HTTPException:
         raise
 
-    except Exception as exc:
+    except Exception as error:
 
-        logger.exception(
-            "Chat request failed for session %s",
-            session_id
-        )
+        logger.exception("Bunny chat generation failed")
 
-        detail = str(exc).replace(
+        safe_error = str(error).replace(
             api_key,
             "[REDACTED]"
         )[:500]
 
         raise HTTPException(
             status_code=502,
-            detail=f"Bunny could not generate a response: {detail}"
-        ) from exc
+            detail=f"Bunny AI error: {safe_error}"
+        ) from error
 
-    reply = (
-        result.get("reply")
-        if isinstance(result, dict)
-        else None
-    )
+    if not isinstance(result, dict):
+
+        raise HTTPException(
+            status_code=502,
+            detail="Invalid response from Bunny."
+        )
+
+    reply = result.get("reply")
 
     if not isinstance(reply, str) or not reply.strip():
 
         raise HTTPException(
             status_code=502,
-            detail="Gemini returned an empty response. Please try again."
+            detail="Gemini returned an empty response."
         )
 
     return {
         "reply": reply,
         "session_id": session_id,
-        "action": (
-            result.get("action")
-            if isinstance(result, dict)
-            else None
-        )
+        "action": result.get("action")
     }
 
 
+# ---------------- CLEAR SESSION ----------------
+
 @app.post("/api/session/clear")
-async def clear_chat_session(request: Request):
+async def clear_session(request: Request):
 
     try:
         payload = await request.json()
-
     except Exception:
         payload = {}
 
     if not isinstance(payload, dict):
         payload = {}
 
-    requested = str(
-        payload.get("session_id") or ""
-    ).strip()
+    requested = payload.get("session_id")
 
     if not requested:
 
         return {
             "status": "ok",
-            "cleared": False,
-            "message": "No session_id supplied."
+            "cleared": False
         }
 
-    session_id = get_session_id(requested)
+    session_id = validate_session_id(
+        str(requested)
+    )
 
-    with _SESSION_MAP_LOCK:
+    with SESSION_MAP_LOCK:
 
-        _ACTIVE_BUNNIES.pop(session_id, None)
-        _SESSION_LOCKS.pop(session_id, None)
+        ACTIVE_SESSIONS.pop(session_id, None)
+        SESSION_LOCKS.pop(session_id, None)
 
     delete_session(session_id)
 
@@ -843,19 +748,19 @@ async def clear_chat_session(request: Request):
 
 
 @app.delete("/api/session/{session_id}")
-async def delete_chat_session(session_id: str):
+async def delete_session_api(session_id: str):
 
-    clean_id = get_session_id(session_id)
+    session_id = validate_session_id(session_id)
 
-    with _SESSION_MAP_LOCK:
+    with SESSION_MAP_LOCK:
 
-        _ACTIVE_BUNNIES.pop(clean_id, None)
-        _SESSION_LOCKS.pop(clean_id, None)
+        ACTIVE_SESSIONS.pop(session_id, None)
+        SESSION_LOCKS.pop(session_id, None)
 
-    delete_session(clean_id)
+    delete_session(session_id)
 
     return {
         "status": "ok",
         "cleared": True,
-        "session_id": clean_id
+        "session_id": session_id
     }
