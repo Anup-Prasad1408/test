@@ -1,4 +1,8 @@
-"""Bunny AI FastAPI backend with safe multimodal/document uploads."""
+"""Bunny AI FastAPI backend.
+
+Accepts both legacy JSON chat requests and multipart/form-data requests with
+multiple attachments. Gemini credentials are read only from Render's env vars.
+"""
 from __future__ import annotations
 
 import io
@@ -12,7 +16,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
@@ -26,13 +30,13 @@ logger = logging.getLogger("bunny-api")
 
 app = FastAPI(
     title="Bunny AI API",
-    version="3.0.0",
-    description="Bunny AI assistant with image and document understanding.",
+    version="3.1.0",
+    description="Bunny AI assistant with multimodal and document uploads.",
 )
 
 DEFAULT_ORIGINS = [
-    "https://anup-prasad1408.github.io",
     "https://anup-prasad008.github.io",
+    "https://anup-prasad1408.github.io",
     "http://localhost:5500",
     "http://127.0.0.1:5500",
     "http://localhost:8000",
@@ -43,7 +47,9 @@ DEFAULT_ORIGINS = [
 def get_allowed_origins() -> list[str]:
     configured = os.getenv("CORS_ORIGINS", "").strip()
     source = configured.split(",") if configured else DEFAULT_ORIGINS
-    return [value.strip().rstrip("/") for value in source if value.strip() and value.strip() != "*"]
+    origins = [origin.strip().rstrip("/") for origin in source if origin.strip()]
+    # Explicit origins only. Do not combine wildcard origins with credentials.
+    return [origin for origin in origins if origin != "*"]
 
 
 app.add_middleware(
@@ -51,17 +57,20 @@ app.add_middleware(
     allow_origins=get_allowed_origins(),
     allow_credentials=False,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type"],
+    allow_headers=["*"],
     max_age=600,
 )
 
 _ACTIVE_BUNNIES: dict[str, Bunny] = {}
 _SESSION_LOCKS: dict[str, threading.RLock] = {}
 _SESSION_MAP_LOCK = threading.Lock()
+
 MAX_FILES = 8
 MAX_FILE_BYTES = 15 * 1024 * 1024
 MAX_TOTAL_BYTES = 25 * 1024 * 1024
-MAX_TEXT_CHARS_PER_FILE = 35_000
+MAX_TEXT_CHARS_PER_FILE = 25_000
+MAX_TOTAL_TEXT_CHARS = 60_000
+MAX_MESSAGE_CHARS = 20_000
 
 
 class SessionRequest(BaseModel):
@@ -83,13 +92,5 @@ def get_session_resources(session_id: str) -> tuple[Bunny, threading.RLock]:
         if bunny is None:
             bunny = Bunny(session_id)
             _ACTIVE_BUNNIES[session_id] = bunny
-        lock = _SESSION_LOCKS.setdefault(session_id, threading.RLock())
-        return bunny, lock
-
-
-def require_gemini_key() -> str:
-    value = os.getenv("GEMINI_API_KEY", "").strip()
-    if not value:
-        raise HTTPException(status_code=503, detail="Gemini API is not configured. Add GEMINI_API_KEY to Render Environment.")
-    return value
-
+        lock = _SESSION_LOCKS.get(session_id)
+        if lock is None:
