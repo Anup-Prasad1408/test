@@ -537,9 +537,6 @@
       .topbar { display: flex; height: 61px; flex-basis: 61px; justify-content: flex-end; padding: 0 12px; gap: 8px; }
       .top-links { display: none; }
       .top-actions { gap: 8px; }
-      .guest-header-actions { gap: 10px; }
-      .guest-signin-button { font-size: 10px; }
-      .guest-start-button { min-height: 34px; padding: 0 11px; font-size: 9px; }
       .top-actions .text-button { display: inline-flex; padding: 8px 3px; font-size: 10px; }
       .top-actions .primary-button { min-height: 34px; padding: 0 10px; font-size: 9px; gap: 5px; }
       .theme-toggle { width: 31px; height: 31px; flex-basis: 31px; }
@@ -937,8 +934,6 @@
     }
     .auth-social:hover { border-color: var(--accent); background: var(--accent-soft); transform: translateY(-1px); }
     .auth-social svg { width: 16px; height: 16px; fill: currentColor; }
-    .auth-linked-providers { margin: 4px 0 0; }
-    .auth-linked-providers .auth-social[disabled] { opacity: .55; cursor: default; transform: none; border-color: rgba(91,214,160,.35); }
     .google-mark { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; color: #4285f4; background: #fff; font: 800 12px Arial,sans-serif; }\n    .facebook-mark { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; color: #fff; background: #1877f2; font: 800 14px Arial,sans-serif; }
     .auth-switch-copy { margin: 2px 0 0; color: var(--muted); text-align: center; font-size: 10px; }
     .auth-legal { margin: -2px 0 0; color: var(--subtle); text-align: center; font-size: 9px; line-height: 1.55; }
@@ -981,9 +976,12 @@
 
 
 
-    /* Header profile avatar + anchored account dropdown */
+    /* Guest actions are shown before login; the profile avatar replaces them after login. */
     .topbar { position: relative; }
     .top-actions { gap: 0; }
+    .guest-actions { display: flex; align-items: center; justify-content: flex-end; gap: 13px; }
+    .guest-actions .text-button { padding: 9px 5px; color: var(--text); font-size: 12px; font-weight: 750; }
+    .guest-actions .primary-button { min-height: 38px; padding: 0 17px; font-size: 11px; }
     .auth-user-chip { position: relative; display: flex; align-items: center; }
     .auth-user-trigger {
       width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center;
@@ -999,31 +997,6 @@
       color: #fff; background: linear-gradient(145deg, #9274e8, #3f568e); font-size: 10px; font-weight: 800;
       box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 13%, transparent), 0 3px 10px rgba(0,0,0,.2);
     }
-    /* Logged-out header: compact public navigation matching the supplied reference. */
-    .topbar {
-      height: 57px; flex-basis: 57px; padding: 0 clamp(18px, 2.2vw, 22px);
-      background: #080b10; border-bottom: 1px solid #20232a;
-      color: #f4f6fb;
-    }
-    .top-links { gap: clamp(16px, 2.1vw, 22px); margin-left: 17px; }
-    .top-link { padding: 8px 0; color: #a9c2df; font-size: 11px; font-weight: 500; letter-spacing: .05px; }
-    .top-link:hover { color: #fff; }
-    .top-actions { gap: 17px; }
-    .guest-header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 17px; }
-    .guest-signin-button {
-      padding: 9px 0; border: 0; background: transparent; color: #f5f7fb;
-      font-size: 11px; font-weight: 750; cursor: pointer;
-    }
-    .guest-signin-button:hover { color: #b8d6f7; }
-    .guest-start-button {
-      min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 0 17px; border: 1px solid #f4f6fb; border-radius: 999px;
-      background: #f4f6fb; color: #10141b; font-size: 10px; font-weight: 800; cursor: pointer;
-      transition: transform .18s ease, box-shadow .18s ease;
-    }
-    .guest-start-button:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,255,255,.12); }
-    .guest-start-button svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-    .auth-user-chip { margin-left: auto; }
     .auth-user-avatar img, .account-menu-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
     .account-menu {
       position: absolute; z-index: 120; top: calc(100% + 10px); right: 0; width: 248px; max-width: calc(100vw - 24px);
@@ -1066,6 +1039,9 @@
     @media (max-width: 650px) {
       .topbar { display: flex; justify-content: flex-end; }
       .top-actions { margin-left: auto; }
+      .guest-actions { gap: 8px; }
+      .guest-actions .text-button { padding: 8px 3px; font-size: 10px; }
+      .guest-actions .primary-button { min-height: 34px; padding: 0 10px; font-size: 9px; gap: 5px; }
       .auth-user-trigger { width: 40px; height: 40px; }
       .account-menu { right: 0; width: min(248px, calc(100vw - 88px)); }
     }
@@ -1126,12 +1102,9 @@
           <button class="top-link" data-coming-soon type="button">Releases</button>
         </nav>
         <div class="top-actions" aria-label="Account actions">
-          <div class="guest-header-actions" id="guestHeaderActions">
-            <button class="guest-signin-button" id="guestHeaderSignIn" type="button">Sign in</button>
-            <button class="guest-start-button" id="guestHeaderGetStarted" type="button">
-              <span>Get started for free</span>
-              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5 4h7v7"/></svg>
-            </button>
+          <div class="guest-actions" id="topGuestActions">
+            <button class="text-button" id="topSignIn" type="button">Sign in</button>
+            <button class="primary-button" id="topGetStarted" type="button">Get started for free <span aria-hidden="true">↗</span></button>
           </div>
           <div class="auth-user-chip hidden" id="topUserChip">
             <button class="auth-user-trigger" id="topUserTrigger" type="button" title="Open profile menu"
@@ -1191,11 +1164,6 @@
                   <div class="composer-actions"><button class="tool-button mic-button" type="button" aria-label="Voice input" title="Voice input"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"/></svg></button><button class="send-button" type="submit" aria-label="Send message" disabled><svg viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></button></div>
                 </div>
               </form>
-            </div>
-            <div class="suggestion-row">
-              <button class="suggestion" data-prompt="Help me build a modern website with HTML, CSS and JavaScript." type="button">✦ Build a website</button>
-              <button class="suggestion" data-prompt="Explain this concept in simple terms with an example." type="button">⌘ Learn something</button>
-              <button class="suggestion" data-prompt="Help me debug and improve this code: " type="button">⌁ Debug my code</button>
             </div>
             <div class="status-line"><span class="status-dot" id="backendDot"></span><span id="backendStatus">Connecting to Bunny...</span></div>
           </div>
@@ -1337,25 +1305,7 @@
           <strong id="authAccountName">Bunny AI user</strong>
           <span id="authAccountEmail"></span>
         </div>
-        <p class="auth-form-intro">Connect sign-in methods to this same Bunny AI account. Your Firebase UID and saved data will remain the same.</p>
-        <div class="auth-socials auth-linked-providers">
-          <button class="auth-social" type="button" data-auth-link-provider="google"><span class="google-mark">G</span><span>Google</span></button>
-          <button class="auth-social" type="button" data-auth-link-provider="facebook"><span class="facebook-mark">f</span><span>Facebook</span></button>
-          <button class="auth-social" type="button" data-auth-link-provider="github"><span>GitHub</span></button>
-        </div>
-        <p class="auth-form-intro" id="authLinkedProvidersStatus" aria-live="polite"></p>
         <button class="auth-submit auth-signout-button" id="authModalSignOut" type="button">Sign out</button>
-      </section>
-
-      <section class="auth-form hidden" id="authLinkRecoveryScreen">
-        <p class="auth-form-intro">An account already exists with this email. Sign in with its existing password to securely connect this provider to the same Bunny AI account:</p>
-        <strong class="auth-verify-email" id="authLinkRecoveryEmail"></strong>
-        <label class="auth-field">
-          <span>Existing Bunny AI password</span>
-          <input id="authLinkRecoveryPassword" type="password" autocomplete="current-password" placeholder="Enter your existing password" required>
-        </label>
-        <button class="auth-submit" id="authLinkRecoverySubmit" type="button">Verify and connect account <span aria-hidden="true">→</span></button>
-        <button class="auth-back-link" id="authLinkRecoveryCancel" type="button">Cancel</button>
       </section>
 
       <p class="auth-footer-note">Your account is managed securely by Firebase Authentication.</p>
@@ -1397,8 +1347,8 @@
     // FIREBASE WEB CONFIG — paste your Firebase Console config here
     // Firebase Console > Project settings > Your apps > Web app
     // ============================================================
-    const firebaseConfig = {   
-apiKey: "AIzaSyDPB9iPQNK3KCdQwj4vxNStIBJKKQ_thdg",
+    const firebaseConfig = {
+     apiKey: "AIzaSyDPB9iPQNK3KCdQwj4vxNStIBJKKQ_thdg",
   authDomain: "authentication-app-71836.firebaseapp.com",
   projectId: "authentication-app-71836",
   storageBucket: "authentication-app-71836.firebasestorage.app",
@@ -1772,11 +1722,6 @@ apiKey: "AIzaSyDPB9iPQNK3KCdQwj4vxNStIBJKKQ_thdg",
     const authForgotForm = document.getElementById("authForgotForm");
     const authVerifyScreen = document.getElementById("authVerifyScreen");
     const authAccountScreen = document.getElementById("authAccountScreen");
-    const authLinkRecoveryScreen = document.getElementById("authLinkRecoveryScreen");
-    // OAuth credentials are kept only in memory; never store them in localStorage/sessionStorage.
-    let pendingAuthCredential = null;
-    let pendingAuthEmail = "";
-    let pendingAuthProviderName = "";
 
     function authMessage(message, type = "error") {
       authAlert.textContent = String(message);
@@ -1803,9 +1748,7 @@ apiKey: "AIzaSyDPB9iPQNK3KCdQwj4vxNStIBJKKQ_thdg",
         "auth/popup-closed-by-user": "The sign-in window was closed before finishing.",
         "auth/popup-blocked": "Your browser blocked the sign-in window. Allow popups and try again.",
         "auth/operation-not-allowed": "This sign-in provider is not enabled in Firebase Authentication.",
-        "auth/account-exists-with-different-credential": "This email already has a Bunny AI account. Verify your existing account to connect this sign-in method.",
-        "auth/credential-already-in-use": "This social account is already connected to a different Bunny AI account. Sign in to that account first; its data cannot be merged automatically.",
-        "auth/provider-already-linked": "This sign-in method is already connected to your Bunny AI account.",
+        "auth/account-exists-with-different-credential": "This email is already linked to another sign-in method.",
         "auth/unauthorized-domain": "This website domain is not authorized in Firebase Authentication.",
         "auth/requires-recent-login": "Please sign in again and retry this action."
       };
@@ -1828,9 +1771,9 @@ apiKey: "AIzaSyDPB9iPQNK3KCdQwj4vxNStIBJKKQ_thdg",
     }
 
     function showAuthScreen(screen) {
-      [authLoginForm, authSignupForm, authForgotForm, authVerifyScreen, authAccountScreen, authLinkRecoveryScreen]
+      [authLoginForm, authSignupForm, authForgotForm, authVerifyScreen, authAccountScreen]
         .forEach(element => element.classList.add("hidden"));
-      authTabs.classList.toggle("hidden", screen === "forgot" || screen === "verify" || screen === "account" || screen === "link-recovery");
+      authTabs.classList.toggle("hidden", screen === "forgot" || screen === "verify" || screen === "account");
       document.getElementById("authTabLogin").classList.toggle("active", screen === "login");
       document.getElementById("authTabSignup").classList.toggle("active", screen === "signup");
       document.getElementById("authTabLogin").setAttribute("aria-selected", String(screen === "login"));
@@ -1866,13 +1809,6 @@ apiKey: "AIzaSyDPB9iPQNK3KCdQwj4vxNStIBJKKQ_thdg",
         title.textContent = "Account";
         description.textContent = "You're signed in to Bunny AI.";
         updateAuthAccountCard();
-      } else if (screen === "link-recovery") {
-        authLinkRecoveryScreen.classList.remove("hidden");
-        eyebrow.textContent = "SECURE ACCOUNT LINKING";
-        title.textContent = "Verify your account";
-        description.textContent = "Confirm ownership before connecting another sign-in method.";
-        document.getElementById("authLinkRecoveryEmail").textContent = pendingAuthEmail;
-        document.getElementById("authLinkRecoveryPassword").value = "";
       }
       authDialog.scrollTop = 0;
     }
@@ -1894,9 +1830,6 @@ apiKey: "AIzaSyDPB9iPQNK3KCdQwj4vxNStIBJKKQ_thdg",
 
     async function closeAuthModal() {
       authBackdrop.hidden = true;
-      pendingAuthCredential = null;
-      pendingAuthEmail = "";
-      pendingAuthProviderName = "";
       document.body.classList.remove("auth-open");
       [authLoginForm, authSignupForm, authForgotForm].forEach(form => form.reset());
       // An unverified email/password account should not remain signed in after the user closes verification.
@@ -1929,17 +1862,6 @@ apiKey: "AIzaSyDPB9iPQNK3KCdQwj4vxNStIBJKKQ_thdg",
       }
       document.getElementById("authAccountName").textContent = name;
       document.getElementById("authAccountEmail").textContent = profile.email;
-      const linked = new Set((currentAuthUser.providerData || []).map(item => item.providerId));
-      document.querySelectorAll("[data-auth-link-provider]").forEach(button => {
-        const providerId = button.dataset.authLinkProvider;
-        const isLinked = linked.has(providerId);
-        button.disabled = isLinked;
-        const label = button.querySelector("span:last-child");
-        if (label) label.textContent = isLinked ? "Connected" : (providerId === "google" ? "Google" : providerId === "facebook" ? "Facebook" : "GitHub");
-        button.title = isLinked ? "Already connected to this account" : "Connect " + providerId;
-      });
-      const status = document.getElementById("authLinkedProvidersStatus");
-      if (status) status.textContent = "Connected: " + (Array.from(linked).map(id => id === "password" ? "Email/password" : id).join(", ") || "None");
     }
 
     function updateAuthUI(user) {
@@ -1952,9 +1874,12 @@ apiKey: "AIzaSyDPB9iPQNK3KCdQwj4vxNStIBJKKQ_thdg",
       }
 
       const loggedIn = Boolean(currentAuthUser);
-      // Guests see public navigation + Sign in / Get started; signed-in users see the profile menu.
-      document.getElementById("guestHeaderActions").classList.toggle("hidden", loggedIn);
-      document.getElementById("topUserChip").classList.toggle("hidden", !loggedIn);
+      // Guest users see Sign in / Get started. Signed-in users see only the profile avatar.
+      const guestActions = document.getElementById("topGuestActions");
+      const userChip = document.getElementById("topUserChip");
+      if (guestActions) guestActions.classList.toggle("hidden", loggedIn);
+      if (userChip) userChip.classList.toggle("hidden", !loggedIn);
+      if (!loggedIn) closeAccountMenu();
       renderAccountButton();
       updateTopAccountMenu();
       if (loggedIn) updateAuthAccountCard();
@@ -1964,59 +1889,6 @@ apiKey: "AIzaSyDPB9iPQNK3KCdQwj4vxNStIBJKKQ_thdg",
       updateAuthUI(user);
       await closeAuthModal();
       toast("You're signed in to Bunny AI.", "success");
-    }
-
-    function createAuthProvider(providerName) {
-      if (providerName === "google") return new firebase.auth.GoogleAuthProvider();
-      if (providerName === "facebook") return new firebase.auth.FacebookAuthProvider();
-      if (providerName === "github") return new firebase.auth.GithubAuthProvider();
-      return null;
-    }
-
-    function getPendingCredential(provider, error) {
-      try {
-        if (provider && typeof provider.constructor.credentialFromError === "function") {
-          return provider.constructor.credentialFromError(error) || error.credential || null;
-        }
-      } catch (_) { /* Fall back to the credential attached to the Firebase error. */ }
-      return error && error.credential ? error.credential : null;
-    }
-
-    function beginPasswordAccountLink(providerName, provider, error) {
-      const email = error && (error.email || (error.customData && error.customData.email));
-      const credential = getPendingCredential(provider, error);
-      if (!email || !credential) {
-        authMessage("Firebase could not retrieve the pending sign-in details. Please sign in with your existing Bunny AI password first, then connect this provider from your account menu.");
-        return;
-      }
-      pendingAuthCredential = credential;
-      pendingAuthEmail = email;
-      pendingAuthProviderName = providerName;
-      showAuthScreen("link-recovery");
-      authMessage("This email already has an account. Enter that account's password to connect " + providerName + " safely.");
-    }
-
-    async function completePendingProviderLink(user) {
-      if (!pendingAuthCredential) return false;
-      try {
-        const linked = await user.linkWithCredential(pendingAuthCredential);
-        pendingAuthCredential = null;
-        pendingAuthEmail = "";
-        const providerName = pendingAuthProviderName;
-        pendingAuthProviderName = "";
-        await linked.user.reload();
-        await finishAuth(linked.user);
-        toast((providerName || "Sign-in method") + " connected to your existing Bunny AI account.", "success");
-        return true;
-      } catch (error) {
-        if (error.code === "auth/credential-already-in-use") {
-          authMessage("This social account is already attached to a different Firebase UID. Bunny AI will not merge or delete either account automatically. Sign in to the account that already owns this provider before deciding how to migrate its data.");
-          showAuthScreen("account");
-          return false;
-        }
-        authMessage(authErrorMessage(error));
-        return false;
-      }
     }
 
     function requireFirebase() {
@@ -2136,10 +2008,8 @@ apiKey: "AIzaSyDPB9iPQNK3KCdQwj4vxNStIBJKKQ_thdg",
           return;
         }
         await user.reload();
-        if (user.emailVerified) {
-          if (pendingAuthCredential) await completePendingProviderLink(user);
-          else await finishAuth(user);
-        } else authMessage("Your email is not verified yet. Open the verification email, then try again.");
+        if (user.emailVerified) await finishAuth(user);
+        else authMessage("Your email is not verified yet. Open the verification email, then try again.");
       } catch (error) {
         authMessage(authErrorMessage(error));
       } finally {
@@ -2184,88 +2054,21 @@ apiKey: "AIzaSyDPB9iPQNK3KCdQwj4vxNStIBJKKQ_thdg",
       button.addEventListener("click", async () => {
         if (!requireFirebase()) return;
         const providerName = button.dataset.authProvider;
-        const provider = createAuthProvider(providerName);
+        let provider;
+        if (providerName === "google") provider = new firebase.auth.GoogleAuthProvider();
+        if (providerName === "facebook") provider = new firebase.auth.FacebookAuthProvider();
+        if (providerName === "github") provider = new firebase.auth.GithubAuthProvider();
         if (!provider) return;
         setAuthButtonLoading(button, true);
         try {
-          // If already signed in, connect the provider to the current UID instead of creating/signing into another account.
-          if (firebaseAuth.currentUser) {
-            const linked = await firebaseAuth.currentUser.linkWithPopup(provider);
-            await linked.user.reload();
-            await finishAuth(linked.user);
-          } else {
-            const credential = await firebaseAuth.signInWithPopup(provider);
-            await finishAuth(credential.user);
-          }
-        } catch (error) {
-          if (error.code === "auth/account-exists-with-different-credential") {
-            beginPasswordAccountLink(providerName, provider, error);
-          } else {
-            authMessage(authErrorMessage(error));
-          }
-        } finally {
-          setAuthButtonLoading(button, false);
-        }
-      });
-    });
-
-    // Provider buttons inside the signed-in account screen always link to the current Firebase UID.
-    document.querySelectorAll("[data-auth-link-provider]").forEach(button => {
-      button.addEventListener("click", async () => {
-        if (!requireFirebase() || !firebaseAuth.currentUser) {
-          authMessage("Please sign in to Bunny AI first.");
-          return;
-        }
-        const providerName = button.dataset.authLinkProvider;
-        const provider = createAuthProvider(providerName);
-        if (!provider) return;
-        setAuthButtonLoading(button, true);
-        try {
-          const linked = await firebaseAuth.currentUser.linkWithPopup(provider);
-          await linked.user.reload();
-          updateAuthUI(linked.user);
-          updateAuthAccountCard();
-          authMessage(providerName + " connected to this Bunny AI account.", "success");
+          const credential = await firebaseAuth.signInWithPopup(provider);
+          await finishAuth(credential.user);
         } catch (error) {
           authMessage(authErrorMessage(error));
         } finally {
           setAuthButtonLoading(button, false);
-          updateAuthAccountCard();
         }
       });
-    });
-
-    document.getElementById("authLinkRecoverySubmit").addEventListener("click", async () => {
-      if (!requireFirebase() || !pendingAuthCredential || !pendingAuthEmail) return;
-      const button = document.getElementById("authLinkRecoverySubmit");
-      const password = document.getElementById("authLinkRecoveryPassword").value;
-      if (!password) { authMessage("Please enter your existing Bunny AI password."); return; }
-      setAuthButtonLoading(button, true);
-      try {
-        const result = await firebaseAuth.signInWithEmailAndPassword(pendingAuthEmail, password);
-        await result.user.reload();
-        if (!result.user.emailVerified) {
-          await result.user.sendEmailVerification();
-          document.getElementById("authVerifyEmail").textContent = result.user.email || pendingAuthEmail;
-          showAuthScreen("verify");
-          authMessage("Please verify this email address before linking another sign-in method. We sent a verification link.");
-          return;
-        }
-        await completePendingProviderLink(result.user);
-      } catch (error) {
-        authMessage(error.code === "auth/wrong-password" || error.code === "auth/invalid-credential"
-          ? "That password is incorrect. Please enter the password for this existing Bunny AI account."
-          : authErrorMessage(error));
-      } finally {
-        setAuthButtonLoading(button, false);
-      }
-    });
-
-    document.getElementById("authLinkRecoveryCancel").addEventListener("click", () => {
-      pendingAuthCredential = null;
-      pendingAuthEmail = "";
-      pendingAuthProviderName = "";
-      showAuthScreen("login");
     });
 
     document.getElementById("authModalSignOut").addEventListener("click", async () => {
@@ -2280,8 +2083,12 @@ apiKey: "AIzaSyDPB9iPQNK3KCdQwj4vxNStIBJKKQ_thdg",
       }
     });
 
-    document.getElementById("guestHeaderSignIn").addEventListener("click", () => openAuthModal("login", true));
-    document.getElementById("guestHeaderGetStarted").addEventListener("click", () => openAuthModal("signup", true));
+    document.getElementById("topSignIn").addEventListener("click", () => {
+      openAuthModal("login");
+    });
+    document.getElementById("topGetStarted").addEventListener("click", () => {
+      openAuthModal("signup");
+    });
 
     document.getElementById("topUserTrigger").addEventListener("click", event => {
       event.stopPropagation();
